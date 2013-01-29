@@ -1,4 +1,5 @@
-library parse;
+library mine;
+
 import 'dart:collection';
 import 'package:logging/logging.dart';
 
@@ -42,16 +43,24 @@ abstract class _Parser {
 abstract class Parser extends _Parser {
   And operator +(Parser other) => new And(this, other);
   Or operator |(Parser other) => new Or(this, other);
+  Parser operator *(Parser other) {
+    //T('b') + f | new Null();
+    var star = new KleeneStar();
+    star.parser = this + star | new Null();
+    return star;
+  }
   Reduce operator <=(Function reduction) => new Reduce(this, reduction);
 
   MySet parse(List tokens){
     var parser = this;
     for( var token in tokens){
-      log.info('$parser');
+      print('logging');
+      print('$parser');
+      print('don log');
       parser = parser.derive(token);
     }
-    log.info('done: $parser');
-    //return parser.parseNull();
+    print('done: $parser');
+    return parser.parseNull();
   }
 }
 
@@ -61,37 +70,37 @@ class Empty extends Parser {
 
   MySet parseNull() {
     var r = new MySet();
-    nlog.info('$this: $r');
+    print('$this: $r');
     return r;
   }
   Parser derive(token) {
     var r = new Empty();
-    dlog.info('($token) => $this: $r');
     return r;
+    print('($token) => $this: $r');
   }
 
   /// singleton factory
   static final _instance = new Empty._internal();
   factory Empty() => _instance;
   Empty._internal();
-  toString() => 'Empty';
+  //toString() => 'Empty';
 }
 
 class Null extends Parser {
   MySet result = new MySet.from(['']);
   bool get nullable => true;
   bool get empty => false;
-  toString() => 'Null($result)';
+  // toString() => 'Null($result)';
 
   MySet parseNull() {
     var r = this.result;
-    nlog.info('$this: $r');
+    print('$this: $r');
     return r;
   }
 
   Parser derive(token) {
     var r = new Empty();
-    dlog.info('($token) => $this: $r');
+    print('($token) => $this: $r');
     return r;
   }
 
@@ -107,7 +116,7 @@ class Null extends Parser {
 
   /// Default constructor
   Null._internal([MySet result]){
-    if (?result){
+    if (result != null){
       this.result = new MySet.from(result);
     }
   }
@@ -120,11 +129,11 @@ class Token extends Parser {
   bool get nullable => false;
   bool get empty => false;
 
-  toString() => 'Token($token)';
+  // toString() => 'Token($token)';
 
   MySet parseNull() {
     var r = new MySet();
-    nlog.info('$this: $r');
+    print('$this: $r');
     return r;
   }
   Parser derive(token){
@@ -132,23 +141,23 @@ class Token extends Parser {
     if (this.token == token){
       r = new Null(new MySet.from([token]));
     }
-    dlog.info('($token) => $this: $r');
+    print('($token) => $this: $r');
     return r;
   }
 }
 
-class And extends _Fix {
+class And extends Parser {
   _Parser first;
   _Parser second;
   And(this.first, this.second);
 
-  toString() => 'And($first, $second)';
+  // toString() => 'And($first, $second)';
 
   bool get nullable => this.first.nullable && this.second.nullable;
   bool get empty => this.first.empty || this.second.empty;
 
-  Parser _derive(token){
-    dlog.info('_ ($token) => $this');
+  Parser derive(token){
+    print('_ ($token) => $this');
     var r;
     if (this.first.nullable){
       var left = new And(this.first.derive(token), this.second);
@@ -158,34 +167,34 @@ class And extends _Fix {
     } else {
       r = new And(this.first.derive(token), this.second);
     }
-    dlog.info('_ ($token) => $this: $r');
+    print('_ ($token) => $this: $r');
     return r;
   }
 
-  MySet _parseNull(){
-    nlog.info('_ => $this');
+  MySet parseNull(){
+    print('_ => $this');
     MySet result = new MySet();
     for ( var l in this.first.parseNull()) {
       for (var r in this.second.parseNull())
         result.add(new MySet.from([l,r]));
     }
-    nlog.info('_ $this: $result');
+    print('_ $this: $result');
     return result;
   }
 }
 
-class Or extends _Fix {
+class Or extends Parser {
   _Parser first;
   _Parser second;
   Or(this.first, this.second);
 
-  toString() => 'Or($first, $second)';
+  // toString() => 'Or($first, $second)';
 
   bool get nullable => this.first.nullable || this.second.nullable;
   bool get empty => this.first.empty && this.second.empty;
 
-  Parser _derive(token){
-    dlog.info('_ ($token) => $this');
+  Parser derive(token){
+    print('_ ($token) => $this');
     var r;
     if (this.first.empty){
       r = this.second.derive(token);
@@ -195,21 +204,21 @@ class Or extends _Fix {
     } else
       r = new Or(first.derive(token), second.derive(token));
 
-    dlog.info('_ ($token) => $this: $r');
+    print('_ ($token) => $this: $r');
     return r;
   }
 
-  MySet _parseNull(){
-    nlog.info('_ $this');
+  MySet parseNull(){
+    print('_ $this');
     MySet result = new MySet();
     result.addAll(this.first.parseNull());
     result.addAll(this.second.parseNull());
-    nlog.info('_ $this: $result');
+    print('_ $this: $result');
     return result;
   }
 }
 
-class Reduce extends _Fix {
+class Reduce extends Parser {
   Parser parser;
   Function reduction;
 
@@ -218,137 +227,108 @@ class Reduce extends _Fix {
 
   Reduce(this.parser, this.reduction);
 
-  toString() => 'Reduce($parser)';
+  // toString() => 'Reduce($parser)';
 
-  Parser _derive(token) {
-    dlog.info('_ ($token) => $this');
+  Parser derive(token) {
+    print('_ ($token) => $this');
     var r = new Reduce(parser.derive(token), this.reduction);
-    dlog.info('_ ($token) => $this: $r');
+    print('_ ($token) => $this: $r');
     return r;
   }
 
-  MySet _parseNull(){
-    nlog.info('_ $this');
+  MySet parseNull(){
+    print('_ $this');
     MySet result = new MySet();
     MySet parseNull = parser.parseNull();
 
     for( final r in parseNull){
       result.add(reduction(r));
     }
-    nlog.info('_ $this: $result');
+    print('_ $this: $result');
     return result;
   }
 }
 
-class KleeneStar extends _Parser {
-  Parser parser;
-  bool get nullable => parser.nullable;
-  bool get empty => parser.empty;
-  Parser derive(token) => parser.derive(token);
-  MySet parseNull() {
-    nlog.info('$this');
-    var r = parser.parseNull();
-    nlog('$this: $r');
-    return r;
-  }
-  toString() => 'KleeneStar($parser)';
-}
-
-abstract class _Fix extends Parser {
-  Parser _derive(token);
-  MySet _parseNull();
-
-  toString() => '_Fix';
-  static var _memoize = new Map<String, Parser>();
-
-//  Parser derive(token) => _memoize.putIfAbsent(token, () =>
-//      new _Lazy(this, token));
-
-  Parser derive(token) {
-    var r = _memoize.putIfAbsent(token, () => new _Lazy(this, token));
-    dlog.info('($token) => $this: $r');
-    return r;
+class KleeneStar extends Parser {
+  Parser _parser;
+  bool isNullable_called = false;
+  bool isNullable_value = false;
+  bool isEmpty_called = false;
+  bool isEmpty_value = true;
+  bool parseNull_called = false;
+  MySet parseNull_value = new MySet();
+  var cache = new Map<dynamic, Parser>();
+  
+  set parser(p) {
+    print(p);
+    _parser = p;
+    isNullable_called = false;
+    isNullable_value = false;
+    isEmpty_called = false;
+    isEmpty_value = true;
+    parseNull_called = false;
+    parseNull_value = new MySet();
+    cache = new Map<dynamic, Parser>();
+    print('done');
   }
 
-  MySet _result = null;
-  MySet parseNull() {
-    nlog.info('$this');
-    if (_result != null) {
-      nlog.info('$this: $_result');
-      return _result;
+  get nullable {
+    if(isNullable_called)
+      return isNullable_value;
+    isNullable_called = true;
+    var value;    
+    while (true) {
+      value = _parser.nullable;
+      if (isNullable_value == value)
+        break;
+      isNullable_value = value;
     }
-    MySet result = new MySet();
-    do {
-      _result = result;
-      result = this._parseNull();
-      var r = _result == result;
-      nlog.info('$_result == $result = $r');
-    } while (_result != result);
-    nlog.info('$this: $result');
-    return _result;
+    return value;
   }
-}
-
-class _Lazy extends Parser {
-
-  _Fix parser;
-  dynamic token;
-  Parser _derivative = null;
-
-  toString() => '_Lazy($parser): T:$token, D:$_derivative';
-
-  Parser get derivative {
-    if(_derivative == null){
-      _derivative = parser._derive(token);
+  bool get empty {
+    if (isEmpty_called)
+      return isEmpty_value;
+    
+    isEmpty_called = true;
+    var value;
+    while(true) {
+      value = _parser.empty;
+      if (isEmpty_value == value)
+        break;
+      isEmpty_value = value;
     }
-    return _derivative;
+    return value;
   }
 
-  _Lazy(parser, token){
-    if(parser is! _Fix) throw 'No way';
-    this.parser = parser;
-    this.token = token;
-  }
+  MySet parseNull(){
+    if (parseNull_called)
+      return parseNull_value;
 
-  bool get nullable => parser.nullable;
-  bool get empty => parser.empty;
+    parseNull_called = true;
+    var value;
+    while(true){
+      value = _parser.parseNull();
+      if (parseNull_value == value)
+        break;
+      parseNull_value = value;
+    }
+    return value;
+  }
 
   Parser derive(token){
-    dlog.info('($token) => $this');
-    var r = derivative.derive(token);
-    dlog.info('($token) => $this: $r');
-    return r;
-  }
-//  MySet parseNull() => derivative.parseNull();
-
-/// Using force instead of getter
-//  Parser derive(token) {
-//    force();
-//    return _derivative.derive(token);
-//  }
-
-  MySet parseNull() {
-    nlog.info('$this');
-    force();
-    var r = _derivative.parseNull();
-    nlog.info('$this: $r');
+    var r = cache.putIfAbsent(token, () => _parser.derive(token));
+    print(r);
     return r;
   }
 
-  void force(){
-    if(_derivative == null){
-      _derivative = parser._derive(token);
-    }
-  }
+  // toString() => 'KleeneStar($_parser)';
 }
 
+
 T(token) => new Token(token);
-var _ = null;
+var _ = new Null();
 
 main(){
-  var p = T('import') + T('lib');
-  var i = p + T('a');
-
   log.on.record.add((r) {
     if(r.loggerName == 'parse') print('${r.message}');
     });
@@ -359,34 +339,17 @@ main(){
     if(r.loggerName == 'parseNull') print('parseNull: ${r.message}');
     });
 
-
+//  var f = new KleeneStar();
+//  var bbb = T('b') + f | new Null();
+  var bbb = T('b') *_;
+//  f._parser = bbb;
+  print(bbb.parse(['b','b','b','b']));
   
+  //var p = T('import') + T('lib');
+  //var i = p + T('a');
   //print(p.parse(['import', 'lib']));
-  print(i.parse(['import', 'lib', 'a']));
+  //  print(i.parse(['import', 'lib', 'a']));
 
   //var o = T('import') + T('a') | T('lib');
   //  print(o.parse(['import', 'a']));
-
-    /*
-  var S = new KleeneStar();
-  var a = new Or(
-      new Null(),
-      new Reduce(
-          new And(
-              S,
-              new Token('1')),
-          (bla) {return bla;}
-        )
-      );
-
-  S.parser = a;
-  print(a.parse(['1','1','1']));
-  */
-
-}
-
-class ImportNode {
-  var lib;
-  ImportNode(this.lib);
-  toString() => 'import $lib';
 }
