@@ -44,7 +44,6 @@ abstract class Parser extends _Parser {
   And operator +(Parser other) => new And(this, other);
   Or operator |(Parser other) => new Or(this, other);
   Parser operator *(Parser other) {
-    //T('b') + f | new Null();
     var star = new KleeneStar();
     star.parser = this + star | new Null();
     return star;
@@ -53,13 +52,13 @@ abstract class Parser extends _Parser {
 
   MySet parse(List tokens){
     var parser = this;
+    var pass = 0;
     for( var token in tokens){
-      print('logging');
-      print('$parser');
-      print('don log');
+      pass += 1;
+      print('PASS: $pass');
       parser = parser.derive(token);
     }
-    print('done: $parser');
+    print('Done parsing');
     return parser.parseNull();
   }
 }
@@ -70,13 +69,11 @@ class Empty extends Parser {
 
   MySet parseNull() {
     var r = new MySet();
-    print('$this: $r');
     return r;
   }
   Parser derive(token) {
     var r = new Empty();
     return r;
-    print('($token) => $this: $r');
   }
 
   /// singleton factory
@@ -94,13 +91,11 @@ class Null extends Parser {
 
   MySet parseNull() {
     var r = this.result;
-    print('$this: $r');
     return r;
   }
 
   Parser derive(token) {
     var r = new Empty();
-    print('($token) => $this: $r');
     return r;
   }
 
@@ -133,7 +128,6 @@ class Token extends Parser {
 
   MySet parseNull() {
     var r = new MySet();
-    print('$this: $r');
     return r;
   }
   Parser derive(token){
@@ -141,7 +135,6 @@ class Token extends Parser {
     if (this.token == token){
       r = new Null(new MySet.from([token]));
     }
-    print('($token) => $this: $r');
     return r;
   }
 }
@@ -157,7 +150,6 @@ class And extends Parser {
   bool get empty => this.first.empty || this.second.empty;
 
   Parser derive(token){
-    print('_ ($token) => $this');
     var r;
     if (this.first.nullable){
       var left = new And(this.first.derive(token), this.second);
@@ -167,18 +159,15 @@ class And extends Parser {
     } else {
       r = new And(this.first.derive(token), this.second);
     }
-    print('_ ($token) => $this: $r');
     return r;
   }
 
   MySet parseNull(){
-    print('_ => $this');
     MySet result = new MySet();
     for ( var l in this.first.parseNull()) {
       for (var r in this.second.parseNull())
         result.add(new MySet.from([l,r]));
     }
-    print('_ $this: $result');
     return result;
   }
 }
@@ -194,7 +183,6 @@ class Or extends Parser {
   bool get empty => this.first.empty && this.second.empty;
 
   Parser derive(token){
-    print('_ ($token) => $this');
     var r;
     if (this.first.empty){
       r = this.second.derive(token);
@@ -204,16 +192,13 @@ class Or extends Parser {
     } else
       r = new Or(first.derive(token), second.derive(token));
 
-    print('_ ($token) => $this: $r');
     return r;
   }
 
   MySet parseNull(){
-    print('_ $this');
     MySet result = new MySet();
     result.addAll(this.first.parseNull());
     result.addAll(this.second.parseNull());
-    print('_ $this: $result');
     return result;
   }
 }
@@ -230,21 +215,17 @@ class Reduce extends Parser {
   // toString() => 'Reduce($parser)';
 
   Parser derive(token) {
-    print('_ ($token) => $this');
     var r = new Reduce(parser.derive(token), this.reduction);
-    print('_ ($token) => $this: $r');
     return r;
   }
 
   MySet parseNull(){
-    print('_ $this');
     MySet result = new MySet();
     MySet parseNull = parser.parseNull();
 
     for( final r in parseNull){
       result.add(reduction(r));
     }
-    print('_ $this: $result');
     return result;
   }
 }
@@ -260,7 +241,6 @@ class KleeneStar extends Parser {
   var cache = new Map<dynamic, Parser>();
   
   set parser(p) {
-    print(p);
     _parser = p;
     isNullable_called = false;
     isNullable_value = false;
@@ -269,7 +249,6 @@ class KleeneStar extends Parser {
     parseNull_called = false;
     parseNull_value = new MySet();
     cache = new Map<dynamic, Parser>();
-    print('done');
   }
 
   get nullable {
@@ -317,7 +296,6 @@ class KleeneStar extends Parser {
 
   Parser derive(token){
     var r = cache.putIfAbsent(token, () => _parser.derive(token));
-    print(r);
     return r;
   }
 
@@ -325,31 +303,39 @@ class KleeneStar extends Parser {
 }
 
 
-T(token) => new Token(token);
+TT(token) => new Token(token);
 var _ = new Null();
+S() => new KleeneStar();
 
 main(){
-  log.on.record.add((r) {
-    if(r.loggerName == 'parse') print('${r.message}');
-    });
-  dlog.on.record.add((r) {
-    if(r.loggerName == 'derive') print('derive: ${r.message}');
-    });
-  nlog.on.record.add((r) {
-    if(r.loggerName == 'parseNull') print('parseNull: ${r.message}');
-    });
 
-//  var f = new KleeneStar();
-//  var bbb = T('b') + f | new Null();
-  var bbb = T('b') *_;
-//  f._parser = bbb;
-  print(bbb.parse(['b','b','b','b']));
+  //  var bee = T('b') <= ((a) {print('BBBB: $a'); return a;});
+  //  var bees = bee * _;
+  //  var r = bees;
+  //  print(r.parse(['b','b','b','b']));
+
+  /// Need to figure out equlity .. everything must be hashable.
+  var f = new KleeneStar();
+  var bbb = new Or(  new Reduce(
+                         new And(  TT('b'), f  ),
+                         (a) {
+                           print('BBBB: "$a"');
+                           var b = a.toList()[0];
+                           var c = a.toList()[1];
+                           print('b,c: $b, $c');
+                           var r = new MySet()..addAll(b)..addAll([c]);
+                           print('r: $r');
+                           return r;
+                         }),
+                     new Reduce(
+                         new Null(),
+                         (a) {
+                           print('Null: "$a"');
+                           return new MySet();
+                         })
+                 );
   
-  //var p = T('import') + T('lib');
-  //var i = p + T('a');
-  //print(p.parse(['import', 'lib']));
-  //  print(i.parse(['import', 'lib', 'a']));
-
-  //var o = T('import') + T('a') | T('lib');
-  //  print(o.parse(['import', 'a']));
+//  var bbb = T('b') *_;
+  f._parser = bbb;
+    print(bbb.parse(['b','b','b','b']));
 }
