@@ -63,7 +63,11 @@ abstract class Language {
   }
 
   Language operator |(Language choice2) => or(choice2);
-  Language operator +(Language suffix) => and(suffix);
+  Language operator +(Language suffix) {
+    if (suffix == null)
+      return this.oneOrMore();
+    return and(suffix);
+  }
   Language operator *(Language NULL) => zeroOrMore();
   Rule operator <=(action) => rule(action);
 }
@@ -371,46 +375,75 @@ class Rule {
 
 /// for now: simple lexer with one rule
 class Lexer {
-  Rule rule;
-  Lexer(this.rule);
+  List<Rule> rules;
+  Lexer(this.rules);
+
+  List all = [];
+  List hidden = [];
   List out = [];
   Iterator input;
 
-  Rule _currentRule;
-  Rule _lastAcceptedRule;
+  List<Rule> _currentRules;
+  List<Rule> _lastAcceptedRules;
   String _lastAcceptedInput;
+
+  /// True iff this state could accept.
+  bool get isAccept => _currentRules.any((_) => _.accepts);
+
+  ///True iff this state accepts, but no succesor possible could.
+  bool get mustAccept {
+    var sawMustAccept = false;
+    for (final r in _currentRules) {
+      print('mustAccept: ${r.mustAccept}');
+      if (r.mustAccept && !sawMustAccept)
+        sawMustAccept = true;
+      else if (!r.rejects)
+        return false;
+    }
+    return sawMustAccept;
+  }
+
+  /// True iff no string can ever be matched from this state.
+  bool get isReject => _currentRules.every((_) => _.rejects);
 
   ///contains chars that are not fully matched
   String str;
 
-  lex(String s){
-    _currentRule = rule;
-    for (final c in s.splitChars()){
-      _currentRule = _currentRule.derive(c);
-      str = '$str$c';
-      if(_currentRule.accepts) {
-        _lastAcceptedRule = _currentRule;
-        _lastAcceptedInput = str;
-        str = '';
-      } else if (_currentRule.rejects) {
-        out.add(_lastAcceptedRule.action(str));
-        _lastAcceptedRule = null;
-        _lastAcceptedInput = null;
-        _currentRule = rule;
-      }
-    }
+  dispatch(){
+    var accepting = _currentRules.where((_) => (_.accepts));
+    var token = (accepting.last).action(_lastAcceptedInput);
+
+    all.add(token);
+    if(!(token is Hidden))
+      out.add(token);
   }
 
-  lex2(String s) {
+  dispatchLastAcceptedRules(){
+    var accepting = _lastAcceptedRules.where((_) => (_.accepts));
+    var token = (accepting.last).action(_lastAcceptedInput);
+    all.add(token);
+    if(!(token is Hidden))
+      out.add(token);
+  }
+  
+  lex(String s) {
     input = s.splitChars().iterator;
     str = (input..moveNext()).current;
 
-    _currentRule = rule;
+    _currentRules = rules;
 
     while(input.current != null){
-      print("'$str'");
-      print("'$_lastAcceptedInput'");
-      _currentRule = _currentRule.derive(input.current);
+      _currentRules = _currentRules.mappedBy((_) => _.derive(input.current));
+        //.where((_) => !_.rejects);
+
+      print('---');
+      print(input.current);
+      for(final r in _currentRules)
+        print(r);
+      print('mustAccept: $mustAccept');
+      print('isAccept: $isAccept');
+      print('isReject: $isReject');      
+
       if(accepted()) {
         if(input.moveNext())
           str = str.concat(input.current);
@@ -422,29 +455,27 @@ class Lexer {
 
       // If at the end of the input, clean up:
       if (input.current == null) break;
-
-
       if(input.moveNext())
         str = str.concat(input.current);
     }
   }
 
   bool accepted() {
-    if(_currentRule.mustAccept){
-      print('accepted');
-      out.add(_currentRule.action(_lastAcceptedInput));
-      _lastAcceptedRule = null; //Reject Rule
+    if(mustAccept){
+      print('mustAccept');
+      dispatch();
+      _lastAcceptedRules = null; //Reject Rule
       _lastAcceptedInput = null;
-      _currentRule = rule;
+      _currentRules = rules;
       return true;
     }
     return false;
   }
 
   bool acceptsCurrentRule() {
-    if(_currentRule.accepts){
-      print('acceptsCurrentRule $_currentRule');
-      _lastAcceptedRule = _currentRule;
+    if(isAccept){
+      print('isAccept');
+      _lastAcceptedRules = _currentRules;
       _lastAcceptedInput = str;
       print("'$str'");
       str = '';
@@ -454,14 +485,19 @@ class Lexer {
   }
 
   bool rejectsCurrentRule() {
-    if (_lastAcceptedRule != null && _currentRule.rejects) {
+    if (_lastAcceptedRules != null && isReject) {
       print('rejectsCurrentRule');
-      out.add(_lastAcceptedRule.action(_lastAcceptedInput));
-      _lastAcceptedRule = null;
+      dispatchLastAcceptedRules();
+      _lastAcceptedRules = null;
       _lastAcceptedInput = null;
-      _currentRule = rule;
+      _currentRules = rules;
       return true;
     }
   }
-
 }
+
+class Hidden {
+  var token;
+  Hidden(this.token);
+}
+hidden(token) => new Hidden(token);
