@@ -7,8 +7,21 @@ var log = new Logger('parse');
 var dlog = new Logger('derive');
 var nlog = new Logger('parseNull');
 
-class MySet<E> extends HashSet {
-  MySet(): super();
+class MySet<E> implements List<E> {
+  var list = new List();
+  MySet._internal([int length = 0]) {
+    list = new List(length);
+  }
+  factory MySet([int length = 0]) {
+    return new MySet._internal(length);
+  }
+  
+  factory MySet.fixedLength(int length, {E fill: null}){
+    var set = new MySet();
+    set.list = new List.fixedLength(length, fill:fill);
+    return set;
+  }
+  
   factory MySet.from(Iterable other) {
     MySet set = new MySet();
     for (final e in other) {
@@ -17,11 +30,13 @@ class MySet<E> extends HashSet {
     return set;
   }
 
-  operator ==(Set other) {
-    var o = new MySet.from(other);
-    Set intersection = this.intersection(o);
-    return intersection.length == this.length
-      && intersection.length == other.length;
+  operator ==(MySet other) {
+    var o = new List.from(other);
+    o = this.list.where((_) => !other.contains(_));
+    return o.length == 0;
+    //o.retainAll(this.list);
+    //return o.length == this.list.length
+    //  && o.length == other.list.length;
   }
 
   get hashCode {
@@ -31,6 +46,34 @@ class MySet<E> extends HashSet {
     }
     return hc;
   }
+
+  E operator [](int index) => list[index];
+  void operator []=(int index, E value) {list[index] = value;}
+  void set length(int newLength) {list.length = newLength;}
+  void add(E value) {list.add(value);}
+  void addLast(E value) {list.addLast(value);}
+  void addAll(Iterable<E> iterable){list.addAll(iterable);}
+  List<E> get reversed => list.reversed;
+  void sort([int compare(E a, E b)]) {list.sort(compare);}
+
+  int indexOf(E element, [int start = 0]) => list.indexOf(element, start);
+  int lastIndexOf(E element, [int start]) => list.lastIndexOf(element, start);
+  void clear(){list.clear();}
+  void remove(Object element) => list.remove(element);
+  E removeAt(int index) => list.removeAt(index);
+  E removeLast() => list.removeLast();
+  List<E> getRange(int start, int length) => list.getRange(start, length);
+  void setRange(int start, int length, List<E> from, [int startFrom]){
+    list.setRange(start, length, from, startFrom);}
+  void removeRange(int start, int length) {list.removeRange(start,length);}
+  void insertRange(int start, int length, [E fill]) {
+    list.insertRange(start, length, fill);}
+  Iterator<E> get iterator => list.iterator;
+  String toString() => list.toString();
+  E get first => list.first;
+  void retainAll(other) => list.retainAll(other);
+  List<E> toList() => list.toList();
+  bool get isEmpty => list.isEmpty;
 }
 
 abstract class _Parser {
@@ -41,14 +84,39 @@ abstract class _Parser {
 }
 
 abstract class Parser extends _Parser {
-  And operator +(Parser other) => new And(this, other);
+  And operator +(Parser other) {
+    if(other == null)
+      oneOrMore();
+    return new And(this, other);
+  }
   Or operator |(Parser other) => new Or(this, other);
-  Parser operator *(Parser other) {
+  Or operator %(Parser other) => zeroOrOne();
+  Parser operator *(Parser other) => zeroOrMore();
+  Reduce operator <=(Function reduction) => new Reduce(this, reduction);
+
+  /// represents 'a?'
+  Parser zeroOrOne() {
+    if (empty) return this;
+    if (nullable) return new Null();
+    return new Or(new Empty(), this);
+  }
+  
+  ///represents 'a+'
+  Parser oneOrMore() {
+    if (empty) return this;
+    if (nullable) return new Empty();
+    return this + (this *_);
+  }
+
+  ///represents 'a*'
+  Parser zeroOrMore() {
+    if (empty) return this;
+    if (nullable) return new Null();
     var star = new KleeneStar();
     star.parser = this + star | new Null();
     return star;
   }
-  Reduce operator <=(Function reduction) => new Reduce(this, reduction);
+  
 
   MySet parse(List tokens){
     var parser = this;
@@ -57,8 +125,10 @@ abstract class Parser extends _Parser {
       pass += 1;
       print('PASS: $pass');
       parser = parser.derive(token);
+      print(parser.parseNull());
     }
     print('Done parsing');
+    print(parser);
     return parser.parseNull();
   }
 }
@@ -69,6 +139,7 @@ class Empty extends Parser {
 
   MySet parseNull() {
     var r = new MySet();
+    print('EMPTY $r');
     return r;
   }
   Parser derive(token) {
@@ -91,6 +162,7 @@ class Null extends Parser {
 
   MySet parseNull() {
     var r = this.result;
+    print('NULL $r');
     return r;
   }
 
@@ -128,11 +200,32 @@ class Token extends Parser {
 
   MySet parseNull() {
     var r = new MySet();
+    print('TOKEN $r');
     return r;
   }
   Parser derive(token){
     var r = new Empty();
     if (this.token == token){
+      r = new Null(new MySet.from([token]));
+    }
+    return r;
+  }
+}
+
+class CallForEqulity extends Parser {
+  Function isEqual;
+  CallForEqulity(this.isEqual);
+
+  bool get nullable => false;
+  bool get empty => false;
+  MySet parseNull() {
+    var r = new MySet();
+    print('CALLFOREQULITY $r');
+    return r;
+  }
+  Parser derive(token){
+    var r = new Empty();
+    if (isEqual(token)){
       r = new Null(new MySet.from([token]));
     }
     return r;
@@ -164,10 +257,25 @@ class And extends Parser {
 
   MySet parseNull(){
     MySet result = new MySet();
+    if(first == null && second == null) return result;
+    if(first == null && second != null) return second.parseNull();
+    if(first != null && second == null) return first.parseNull();
+
+    var f = first.parseNull().isEmpty;
+    var s = second.parseNull().isEmpty;
+    print('First: ${this.first.parseNull()}');
+    print('Second: ${this.second.parseNull()}');
+    if(first.parseNull().isEmpty) return second.parseNull();
+    if(second.parseNull().isEmpty) return first.parseNull();    
+    
+
+
     for ( var l in this.first.parseNull()) {
-      for (var r in this.second.parseNull())
+      for (var r in this.second.parseNull()){
         result.add(new MySet.from([l,r]));
+      }
     }
+    print('AND r:$result f:${first.parseNull()}, s:$second');
     return result;
   }
 }
@@ -199,6 +307,7 @@ class Or extends Parser {
     MySet result = new MySet();
     result.addAll(this.first.parseNull());
     result.addAll(this.second.parseNull());
+    print('OR $result');
     return result;
   }
 }
@@ -226,6 +335,7 @@ class Reduce extends Parser {
     for( final r in parseNull){
       result.add(reduction(r));
     }
+    print('REDUCE $result');
     return result;
   }
 }
@@ -280,8 +390,10 @@ class KleeneStar extends Parser {
   }
 
   MySet parseNull(){
-    if (parseNull_called)
+    if (parseNull_called){
+      print('KLEENESTAR_called $parseNull_value');
       return parseNull_value;
+    }
 
     parseNull_called = true;
     var value;
@@ -291,6 +403,7 @@ class KleeneStar extends Parser {
         break;
       parseNull_value = value;
     }
+    print('KLEENESTAR $value');    
     return value;
   }
 
@@ -306,6 +419,8 @@ class KleeneStar extends Parser {
 TT(token) => new Token(token);
 var _ = new Null();
 S() => new KleeneStar();
+
+P(bool equals(dynamic token)) => new CallForEqulity(equals);
 
 main(){
 
