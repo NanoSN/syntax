@@ -80,7 +80,7 @@ class And extends Language {
     }
     return new And(left.derive(c), right);
   }
-  toString() => '($left$right)';
+  toString() => '$left$right';
 }
 
 
