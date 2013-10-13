@@ -126,12 +126,13 @@ main(){
 /// Helper function that does all the heavy lifting.
 derive(lang, str, {dbg:false}) {
   // We add this special char as part of matcher.
-  lang = new And(lang, new Character('c'));
-  str = '${str}c';
+  lang = new And(lang, EOI);
+  //str = '${str}';
   if(dbg)print('$lang: $str');
   for(var i=0; i< str.length; i++){
     lang = lang.derive(str[i]);
     if(dbg)print('$lang: ${str.substring(i+1)}');
   }
+  lang = lang.derive(EOI);
   return lang;
 }

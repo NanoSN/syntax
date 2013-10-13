@@ -1,22 +1,34 @@
 Language empty = new Empty();
 Language match = new Match();
 
+/// End of input special object.
+var EOI = new EndOfInput();
+
 abstract class Language {
-  Language derive(String ch);
+  Language derive(dynamic ch);
 }
 
 
 /// A [Language] that rejects everything.
 class Empty extends Language {
-  Language derive(String ch) => empty;
+  Language derive(dynamic ch) => empty;
   toString() => '{}';
 }
 
 
 /// A [Language] that matches the defined [Language].
 class Match extends Language {
-  Language derive(String ch) => empty;
+  Language derive(dynamic ch) => empty;
   toString() => '\'\'';
+}
+
+
+/// A special [Language] that matches the end of input.
+/// This [Language] is used as the last derivative to test wheather it is a
+/// match.
+class EndOfInput extends Language {
+  Language derive(dynamic ch) => (ch == EOI)? match: empty;
+  toString() => '<EOI>';
 }
 
 
@@ -24,7 +36,7 @@ class Match extends Language {
 class Character extends Language {
   final String ch;
   Character(this.ch);
-  Language derive(String c) => (ch == c) ? match : empty;
+  Language derive(dynamic c) => (ch == c) ? match : empty;
   toString() => '$ch';
 }
 
@@ -55,7 +67,7 @@ class And extends Language {
 
   factory And(left, right){
     if(left == match) return right;
-    if(right == match) return left; // Really? does this make sense?
+    //if(right == match) return left; // Really? does this make sense?
     if(left == empty || right == empty) return empty;
     return new And._internal(left, right);
   }
