@@ -92,15 +92,35 @@ main(){
     group('Star Operation', (){
       test('match', (){
         var lang = new And(new Star(new Character('a')),
-        new Star(new Character('b')));
-        lang = derive(lang, 'aaabbb', dbg:true);
+                           new Star(new Character('b')));
+        lang = derive(lang, 'aaabbb');
         expect(lang, equals(match));
 
-        lang = new And(new Character('a'), new Star(new Character('b')));
-        lang = derive(lang, 'a');
+        var langABs = new And(new Character('a'), new Star(new Character('b')));
+        lang = derive(langABs, 'a');
+        expect(lang, equals(match));
+        lang = derive(langABs, 'ab');
+        expect(lang, equals(match));
+        lang = derive(langABs, 'abbbb');
+        expect(lang, equals(match));
       });
-    });
 
+      test('no match', (){
+        var lang = new And(new Star(new Character('a')),
+                           new Star(new Character('b')));
+        lang = derive(lang, 'aaabbbc');
+        expect(lang, equals(empty));
+
+        var langABs = new And(new Character('a'), new Star(new Character('b')));
+        lang = derive(langABs, 'aa');
+        expect(lang, equals(empty));
+        lang = derive(langABs, 'abbbc');
+        expect(lang, equals(empty));
+        lang = derive(langABs, 'abbbbbbbbbb.');
+        expect(lang, equals(empty));
+      });
+
+    });
   });
 }
 /// Helper function that does all the heavy lifting.
