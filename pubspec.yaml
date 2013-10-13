@@ -3,7 +3,7 @@ description: simple general purpose parser library
 author: "Sam Elkhateeb <same@nanosn.com>"
 homepage: https://github.com/
 description:  An easy to use event bus library in Dart.
-version: 0.1.0
+version: 0.0.1
 
 dependencies:
   logging: any
