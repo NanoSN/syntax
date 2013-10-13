@@ -1,12 +1,4 @@
-abstract class Rule {
-  bool get accepts;
-  bool get rejects;
-  bool get mustAccept;
-
-  State accept(List inputs);
-  List<Rule> derive(input);
-  List<Rule> deriveEND();
-}
+part of lex;
 
 /// Represents a state
 abstract class _State {
@@ -40,6 +32,7 @@ abstract class _State {
 
   /// Accepts the [input]
   _State accept(){
+    print('accepting $inputs');
     var accepting = rules.where((_) => _.accepts);
     return (accepting.last).accept(inputs);
   }
@@ -54,9 +47,13 @@ abstract class _State {
 
   /// Checks to see if any of the rules match the input c.
   /// returns the lexer state after such a match.
-  _State next(dynamic input) =>
-    new InternalState(inputs..add(input), rules.mappedBy((_) =>
+  _State next(dynamic input) {
+    print('next:inputs: $inputs');
+    return new InternalState(inputs..add(input), rules.mappedBy((_) =>
             _.derive(input)).where((_) =>!_.rejects));
+  }
+
+  _State operator >>(Rule rule) => this..rules.add(rule);
 }
 
 class InternalState extends _State {
@@ -64,14 +61,14 @@ class InternalState extends _State {
 }
 
 class RejectState extends _State {
-  RejectState(): super(null, []);
+  RejectState(inputs): super(inputs, []);
   accept() => throw new Exception("Lexing failure at: $inputs");
 }
 
 /// State to be defined by the user.
 class State extends _State {
 
-  List<Rule> _rules = <Rule>[];
+  list<Rule> _rules = <Rule>[];
 
   /// Starts with empty rules and input
   State(): super([], []);
@@ -99,11 +96,14 @@ class StatefullState extends State {
   /// output tokens
   List output = [];
 
+  var main = new State();
+
   /// Starts the lexer on the given input stream.
   /// The field output will contain a live stream of the lexer output.
   void lex (input) {
-    currentState = new State();//MAIN;
-    currentInput = input;
+    currentState = main;
+    currentInput = input.splitChars(); //TODO: check type
+    print(currentState);
     work();
   }
 
@@ -112,37 +112,46 @@ class StatefullState extends State {
   }
 
   bool workStep() {
+    //    print(currentState);
+    //    print(currentInput);
+    print(lastAcceptingInput);
+    print('inputs: $inputs');
     // First, check to see if the current state must accept.
     if (currentState.mustAccept) {
+      print('mustAccept');
       currentState = currentState.accept();
-      lastAcceptingState = new RejectState();
+      lastAcceptingState = new RejectState(inputs);
       lastAcceptingInput = null;
       return true;
     }
 
     // First, check to see if the curret state accepts or rejects.
     if (currentState.isAccept) {
+      print('isAccept');
       lastAcceptingState = currentState;
-      lastAcceptingInput = currentInput;
+      lastAcceptingInput = inputs;//currentInput;
     } else if (currentState.isReject) {
+      print('isReject');
       // Backtrack to the last accepting state; fail if none.
       currentState = lastAcceptingState.accept();
       currentInput = lastAcceptingInput;
-      lastAcceptingState = new RejectState();
+      lastAcceptingState = new RejectState(inputs);
       lastAcceptingInput = null;
       return true;
     }
 
     // If at the end of the input, clean up:
     if (currentInput.isEmpty) {
+      print('isEmpty');
       var terminalState = currentState.terminate();
       if (terminalState.isAccept) {
         terminalState.accept();
         return false;
       } else {
+      print('not isEmpty');
         currentState = lastAcceptingState.accept();
         currentInput = lastAcceptingInput;
-        lastAcceptingState = new RejectState();
+        lastAcceptingState = new RejectState(inputs);
         lastAcceptingInput = null;
         return true;
       }
@@ -150,26 +159,35 @@ class StatefullState extends State {
 
     // If there's input left to process, process it:
     if (!currentInput.isEmpty) {
+      print('more input');
       var c = currentInput.first;
       currentState = currentState.next(c);
-      currentInput = currentInput.skip(1);
+      currentInput = new List.from(currentInput.skip(1));
     }
 
     // If more progress could be made, keep working.
-    if (!currentInput.isEmpty || currentState.isReject)
+    if (!currentInput.isEmpty || currentState.isReject){
+      print('more progress');
       return true;
+    }
 
     // Check again to see if the current state must accept.
     if (currentState.mustAccept) {
+      print('mustAccept again');
       currentState = currentState.accept();
-      lastAcceptingState = new RejectState();
+      lastAcceptingState = new RejectState(inputs);
       lastAcceptingInput = null;
       return true;
     }
     return false;
   }
 
-  void emit(token) => output.add(token);
-
-  State operator >>(Rule rule) => this..rules.add(rule);
+  _State emit(token) {
+    output.add(token);
+    return main;
+  }
+  _State hidden(token) {
+    output.add(token);
+    return main;
+  }
 }
