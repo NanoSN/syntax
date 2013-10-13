@@ -88,14 +88,30 @@ main(){
       lang = derive(lang, 'aba');
       expect(lang, equals(empty));
     });
+
+    group('Star Operation', (){
+      test('match', (){
+        var lang = new And(new Star(new Character('a')),
+        new Star(new Character('b')));
+        lang = derive(lang, 'aaabbb', dbg:true);
+        expect(lang, equals(match));
+
+        lang = new And(new Character('a'), new Star(new Character('b')));
+        lang = derive(lang, 'a');
+      });
+    });
+
   });
 }
 /// Helper function that does all the heavy lifting.
 derive(lang, str, {dbg:false}) {
-  if(dbg)print('$str $lang');
+  // We add this special char as part of matcher.
+  lang = new And(lang, new Character('c'));
+  str = '${str}c';
+  if(dbg)print('$lang: $str');
   for(var i=0; i< str.length; i++){
     lang = lang.derive(str[i]);
-    if(dbg)print('$str $lang');
+    if(dbg)print('$lang: ${str.substring(i+1)}');
   }
   return lang;
 }
