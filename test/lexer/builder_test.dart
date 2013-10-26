@@ -1,7 +1,6 @@
 
 import 'package:unittest/unittest.dart';
-import 'package:parse/lexer/language.dart';
-import 'package:parse/lexer/builder.dart';
+import 'package:parse/lexer.dart';
 
 main(){
   group('Builder', (){

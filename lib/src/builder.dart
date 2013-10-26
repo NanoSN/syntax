@@ -1,6 +1,6 @@
 /// Helper functions for building [Language].
 
-import 'package:parse/lexer/language.dart';
+part of lexer;
 
 
 /// Main entry for the builder.

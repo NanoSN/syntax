@@ -1,3 +1,5 @@
+part of lexer;
+
 Language empty = new Empty();
 Language match = new Match();
 
