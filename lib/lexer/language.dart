@@ -5,12 +5,17 @@ Language match = new Match();
 var EOI = new EndOfInput();
 
 abstract class Language {
+  bool get isMatch => false;
+  bool get canAccept => false;
+  bool get isReject => false;
   Language derive(dynamic ch);
+  Language derveEnd(dynamic ch) => empty;
 }
 
 
 /// A [Language] that rejects everything.
 class Empty extends Language {
+  bool get isReject => true;
   Language derive(dynamic ch) => empty;
   toString() => '{}';
 }
@@ -18,6 +23,8 @@ class Empty extends Language {
 
 /// A [Language] that matches the defined [Language].
 class Match extends Language {
+  bool get isMatch => true;
+  bool get canAccept => true;
   Language derive(dynamic ch) => empty;
   toString() => '\'\'';
 }
@@ -27,8 +34,9 @@ class Match extends Language {
 /// This [Language] is used as the last derivative to test wheather it is a
 /// match.
 class EndOfInput extends Language {
-  Language derive(dynamic ch) => (ch == EOI)? match: empty;
+  Language derive(dynamic ch) => empty;//(ch == EOI)? match: empty;
   toString() => '<EOI>';
+  Language derveEnd(dynamic ch) => match;
 }
 
 
@@ -45,6 +53,11 @@ class Character extends Language {
 class Or extends Language {
   final Language left;
   final Language right;
+
+  bool get isMatch => left.isMatch && right.isMatch;
+  bool get canAccept => left.canAccept || right.canAccept;
+  bool get isReject => left.isReject && right.isReject;
+
   Or._internal(this.left, this.right);
   factory Or(left, right){
     if (left == empty && right == empty) return empty;
@@ -63,6 +76,11 @@ class Or extends Language {
 class And extends Language {
   final Language left;
   final Language right;
+
+  bool get isMatch => left.isMatch && right.isMatch;
+  bool get canAccept => left.canAccept && right.canAccept;
+  bool get isReject => left.isReject || right.isReject;
+
   And._internal(this.left, this.right);
 
   factory And(left, right){
@@ -75,7 +93,7 @@ class And extends Language {
   Language derive (String c) {
 
     // TODO(Sam): It looks like we need this only for Star.. Is this true?
-    if(left is Star){
+    if(left.canAccept){
       return new Or(new And(left.derive(c), right), right.derive(c));
     }
     return new And(left.derive(c), right);
@@ -87,6 +105,10 @@ class And extends Language {
 /// A [Language] that matches the kleene star of a [Language].
 class Star extends Language {
   final Language language;
+
+  bool get isMatch => language.match;
+  bool get canAccept => true;
+
   Star._internal(this.language);
   factory Star(language){
     if(language == match) return match;
