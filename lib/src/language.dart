@@ -1,33 +1,28 @@
 part of lexer;
 
-Language empty = new Empty();
+Language reject = new Reject();
 Language match = new Match();
 
 /// End of input special object.
 var EOI = new EndOfInput();
 
 abstract class Language {
-  bool get isMatch => false;
-  bool get canAccept => false;
-  bool get isReject => false;
+  bool get isMatchable => false;
   Language derive(dynamic ch);
-  Language derveEnd(dynamic ch) => empty;
 }
 
 
 /// A [Language] that rejects everything.
-class Empty extends Language {
-  bool get isReject => true;
-  Language derive(dynamic ch) => empty;
+class Reject extends Language {
+  Language derive(dynamic ch) => reject;
   toString() => '{}';
 }
 
 
 /// A [Language] that matches the defined [Language].
 class Match extends Language {
-  bool get isMatch => true;
-  bool get canAccept => true;
-  Language derive(dynamic ch) => empty;
+  bool get isMatchable => true;
+  Language derive(dynamic ch) => reject;
   toString() => '\'\'';
 }
 
@@ -36,9 +31,8 @@ class Match extends Language {
 /// This [Language] is used as the last derivative to test wheather it is a
 /// match.
 class EndOfInput extends Language {
-  Language derive(dynamic ch) => empty;//(ch == EOI)? match: empty;
+  Language derive(dynamic ch) => reject;//(ch == EOI)? match: reject;
   toString() => '<EOI>';
-  Language derveEnd(dynamic ch) => match;
 }
 
 
@@ -46,7 +40,7 @@ class EndOfInput extends Language {
 class Character extends Language {
   final String ch;
   Character(this.ch);
-  Language derive(dynamic c) => (ch == c) ? match : empty;
+  Language derive(dynamic c) => (ch == c) ? match : reject;
   toString() => '$ch';
 }
 
@@ -56,15 +50,13 @@ class Or extends Language {
   final Language left;
   final Language right;
 
-  bool get isMatch => left.isMatch && right.isMatch;
-  bool get canAccept => left.canAccept || right.canAccept;
-  bool get isReject => left.isReject && right.isReject;
+  bool get isMatchable => left.isMatchable || right.isMatchable;
 
   Or._internal(this.left, this.right);
   factory Or(left, right){
-    if (left == empty && right == empty) return empty;
-    if (left == empty) return right;
-    if (right == empty) return left;
+    if (left == reject && right == reject) return reject;
+    if (left == reject) return right;
+    if (right == reject) return left;
     if (left == match || right == match) return match;
     return new Or._internal(left, right);
   }
@@ -79,23 +71,21 @@ class And extends Language {
   final Language left;
   final Language right;
 
-  bool get isMatch => left.isMatch && right.isMatch;
-  bool get canAccept => left.canAccept && right.canAccept;
-  bool get isReject => left.isReject || right.isReject;
+  bool get isMatchable => left.isMatchable && right.isMatchable;
 
   And._internal(this.left, this.right);
 
   factory And(left, right){
     if(left == match) return right;
     //if(right == match) return left; // Really? does this make sense?
-    if(left == empty || right == empty) return empty;
+    if(left == reject || right == reject) return reject;
     return new And._internal(left, right);
   }
 
   Language derive (String c) {
 
     // TODO(Sam): It looks like we need this only for Star.. Is this true?
-    if(left.canAccept){
+    if(left.isMatchable){
       return new Or(new And(left.derive(c), right), right.derive(c));
     }
     return new And(left.derive(c), right);
@@ -108,13 +98,12 @@ class And extends Language {
 class Star extends Language {
   final Language language;
 
-  bool get isMatch => language.match;
-  bool get canAccept => true;
+  bool get isMatchable => true;
 
   Star._internal(this.language);
   factory Star(language){
     if(language == match) return match;
-    if(language == empty) return empty;
+    if(language == reject) return reject;
     return new Star._internal(language);
   }
   Language derive(ch) => new And(language.derive(ch), new Star(language));
