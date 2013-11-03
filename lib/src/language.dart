@@ -109,3 +109,31 @@ class Star extends Language {
   Language derive(ch) => new And(language.derive(ch), new Star(language));
   toString() => '$language*';
 }
+
+
+/// Helper [Language] represents a letter [a..z] [A..Z]
+class Letter extends Character {
+  Language derive(dynamic c) {
+    if(c is! String) return empty;
+    if(a_z(c) || A_Z(c))
+      return match;
+    return empty;
+  }
+  bool a_z(String c) => c.codeUnitAt(0) >= 'a'.codeUnitAt(0) &&
+                        c.codeUnitAt(0) <= 'z'.codeUnitAt(0);
+
+  bool A_Z(String c) => c.codeUnitAt(0) >= 'A'.codeUnitAt(0) &&
+                        c.codeUnitAt(0) <= 'Z'.codeUnitAt(0);
+}
+
+/// Helper [Language] represents a digit 0..9
+class Digit extends Character {
+  Language derive(dynamic c) {
+    if(c is! String) return empty;
+    if(digit(c))
+      return match;
+    return empty;
+  }
+  bool digit(String c) => c.codeUnitAt(0) >= '0'.codeUnitAt(0) &&
+                          c.codeUnitAt(0) <= '9'.codeUnitAt(0);
+}

@@ -53,3 +53,6 @@ Language word(String str){
   }
   return result;
 }
+
+Language letter = new Letter();
+Language digit = new Digit();
