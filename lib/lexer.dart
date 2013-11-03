@@ -10,7 +10,7 @@ class Token {
   final String value;
   int position;
   Token(this.value);
-  toString() => '$runtimeType: $value:$position';
+  toString() => '$runtimeType: $value(${value.length}):$position';
 
 }
 
