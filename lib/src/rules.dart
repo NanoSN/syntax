@@ -12,10 +12,3 @@ class Rule {
   Rule derive(dynamic ch) => new Rule(language.derive(ch), action);
   toString() => '$language';
 }
-
-class State {
-  final List<Rule> rules;
-  State(this.rules);
-  State derive(c) =>
-      new State(rules.map((_) => _.derive(c)).where((_) => !_.rejects));
-}

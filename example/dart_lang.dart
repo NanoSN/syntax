@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:parse/lexer.dart';
 
-class Token {}
+
 class Keyword extends Token {
   final String keyword;
   Keyword(this.keyword);
@@ -10,8 +10,8 @@ class Keyword extends Token {
 
 
 Rule keywordRule = new Rule(rx([or(['if', 'else'])]),
-                       (_) => print(new Keyword(_)));
-Rule spacesRule = new Rule(rx([oneOrMore(' ')]), (_) => print('SPACE'));
+                       (_) => new Keyword(_));
+Rule spacesRule = new Rule(rx([oneOrMore(' ')]), (_) => 'SPACE');
 working_main() {
   var rules = [keywordRule, spacesRule];
   var ds = rules;
@@ -78,7 +78,7 @@ streamMain(){
 
   var rules = [keywordRule, spacesRule];
 
-  var state = new State(rules, '', null, null);
+  var state = new MState(rules, '', null, null);
 
   // subscribe to the streams events
   stream.listen(
@@ -89,42 +89,40 @@ streamMain(){
       new Matchable(state).doWork();
 
     } on Dispatched {
-      state = new State(rules, '', null, null);
+      state = new MState(rules, '', null, null);
     } on LastMatchDispatched {
-      state = new State(rules, '', null, null).derive(ch);
+      state = new MState(rules, '', null, null).derive(ch);
     }
   },
   onDone:()=> state.dispatchLastMatch());
 }
 
-main() => streamMain();
-
-class State {
+class MState {
   String matchStr;
   String lastMatchStr;
   Rule lastMatch;
   final List<Rule> rules;
-  State(this.rules, this.matchStr, this.lastMatchStr, this.lastMatch);
+  MState(this.rules, this.matchStr, this.lastMatchStr, this.lastMatch);
 
-  State derive(ch){
+  MState derive(ch){
     if(lastMatch != null){
       return deriveLastMatch(ch);
     }
     return deriveRules(ch);
   }
 
-  State deriveRules(ch) {
+  MState deriveRules(ch) {
     matchStr += ch;
-    return new State(rules.map((_) => _.derive(ch)).where((_) => !_.isReject),
+    return new MState(rules.map((_) => _.derive(ch)).where((_) => !_.isReject),
         this.matchStr, this.lastMatchStr, this.lastMatch);
   }
 
-  State deriveLastMatch(ch){
+  MState deriveLastMatch(ch){
     var ds = lastMatch.derive(ch);
     if(ds.isMatchable){
-      return new State(rules, matchStr, matchStr, ds);
+      return new MState(rules, matchStr, matchStr, ds);
     }
-    ds.action(lastMatchStr);
+    ds.action(lastMatch);
     throw new LastMatchDispatched();
   }
 
@@ -140,7 +138,7 @@ class State {
 }
 
 abstract class Worker {
-  final State state;
+  final MState state;
   Worker(this.state);
   void doWork();
 }
@@ -176,3 +174,16 @@ class Matchable extends Worker {
 
 class Dispatched{}
 class LastMatchDispatched{}
+
+
+//main() => streamMain();
+
+main() {
+  var data = 'if    else  if else'.split('');
+  var stream = new Stream.fromIterable(data);  // create the stream
+
+  var rules = [keywordRule, spacesRule];
+
+  var lexer = new Lexer(rules, stream);
+  lexer.listen((v)=> print(v));
+}
