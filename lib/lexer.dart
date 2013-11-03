@@ -6,7 +6,13 @@ part 'src/language.dart';
 part 'src/rules.dart';
 part 'src/builder.dart';
 
-class Token {}
+class Token {
+  final String value;
+  int position;
+  Token(this.value);
+  toString() => '$runtimeType: $value:$position';
+
+}
 
 /// Main entry for lexing.
 class Lexer extends Stream<Token> {
@@ -26,6 +32,9 @@ class Lexer extends Stream<Token> {
   /// Subscription on [inputStream] while subscribed.
   StreamSubscription<String> _subscription;
 
+  /// Position of the current character.
+  int position = 0;
+
   Lexer(this.rules, this.inputStream){
     outputStream = new StreamController<Token>(
       onListen: _onListen,
@@ -33,7 +42,7 @@ class Lexer extends Stream<Token> {
       onResume: _onResume,
       onCancel: _onCancel);
 
-    state = new State(rules, outputStream);
+    state = new State(rules, outputStream, position);
   }
 
   /// Implements [Stream.listen]
@@ -64,15 +73,17 @@ class Lexer extends Stream<Token> {
   }
 
   void _onData(String ch){
+    position ++;
+
     try{
       state = state.derive(ch);
       new ExactMatch(state).evaluate();
       new Matchable(state).evaluate();
 
     } on Dispatched {
-      state = new State(rules, state.outputStream);
+      state = new State(rules, state.outputStream, position);
     } on LastMatchDispatched {
-      state = new State(rules, outputStream).derive(ch);
+      state = new State(rules, outputStream, position).derive(ch);
     }
   }
   void _onDone(){state.dispatchLastMatch();}
@@ -101,8 +112,10 @@ class State {
   /// Output stream where [Token]s are added to.
   final StreamController<Token> outputStream;
 
+  final int position;
 
-  State(this.rules, this.outputStream,
+
+  State(this.rules, this.outputStream, this.position,
         [this.matchStr='', this.lastMatch]);
 
   /// Find next state.
@@ -117,16 +130,16 @@ class State {
   State deriveRules(ch) {
     matchStr += ch;
     return new State(rules.map((_) => _.derive(ch)).where((_) => !_.isReject),
-                     outputStream, this.matchStr, this.lastMatch);
+                     outputStream, position, this.matchStr, this.lastMatch);
   }
 
   /// Find next state for last match.
   State deriveLastMatch(ch){
     var ds = lastMatch.derive(ch);
     if(ds.isMatchable){
-      return new State(rules, outputStream, matchStr, ds);
+      return new State(rules, outputStream, position, matchStr, ds);
     }
-    outputStream.add(ds.action(matchStr));
+    outputStream.add(ds.action(matchStr)..position = position);
     throw new LastMatchDispatched();
   }
 
@@ -137,11 +150,12 @@ class State {
   List<Rule> findPossibleMatches() => rules.where((_) => _.isMatchable);
 
   /// Dispatch [Rule.action] to the output stream.
-  void dispatch() => outputStream.add(rules.first.action(matchStr));
+  void dispatch() => outputStream.add(rules.first.action(matchStr)
+    ..position=position);
 
   void dispatchLastMatch() {
     if(lastMatch != null){
-      outputStream.add(lastMatch.action(matchStr));
+      outputStream.add(lastMatch.action(matchStr)..position=position);
     }
   }
 }

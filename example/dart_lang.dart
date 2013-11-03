@@ -2,17 +2,13 @@ import 'dart:async';
 import 'package:parse/lexer.dart';
 
 
-class Keyword extends Token {
-  final String keyword;
-  Keyword(this.keyword);
-  toString() => 'Keyword: $keyword';
-}
-
+class Keyword extends Token {Keyword(v):super(v);}
+class Space extends Token {Space(v):super(v);}
 
 Rule keywordRule = new Rule(rx([or(['if', 'else'])]),
                        (_) => new Keyword(_));
-Rule spacesRule = new Rule(rx([oneOrMore(' ')]), (_) => 'SPACE');
 
+Rule spacesRule = new Rule(rx([oneOrMore(' ')]), (_) => new Space(_));
 
 main() {
   var data = 'if    else  if else'.split('');
