@@ -137,6 +137,7 @@ class State {
   State deriveLastMatch(ch){
     var ds = lastMatch.derive(ch);
     if(ds.isMatchable){
+      matchStr += ch;
       return new State(rules, outputStream, position, matchStr, ds);
     }
     outputStream.add(ds.action(matchStr)..position = position);
