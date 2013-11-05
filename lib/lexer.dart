@@ -42,7 +42,7 @@ class Lexer extends Stream<Token> {
       onResume: _onResume,
       onCancel: _onCancel);
 
-    state = new State(rules, outputStream, position);
+    state = new State(rules, position);
   }
 
   /// Implements [Stream.listen]
@@ -80,10 +80,15 @@ class Lexer extends Stream<Token> {
       new ExactMatch(state).evaluate();
       new Matchable(state).evaluate();
 
-    } on Dispatched {
-      state = new State(rules, state.outputStream, position);
-    } on LastMatchDispatched {
-      state = new State(rules, outputStream, position).derive(ch);
+    } on Dispatch catch(transition) {
+      outputStream.add(transition.token);
+      state = new State(rules, position);
+    } on DispatchLastMatch catch(transition){
+      outputStream.add(transition.token);
+      state = new State(rules, position).derive(ch);
+    } on NoMatch catch(e){
+      _subscription.cancel();
+      outputStream.addError(e);
     }
   }
   void _onDone(){state.dispatchLastMatch();}
@@ -91,10 +96,14 @@ class Lexer extends Stream<Token> {
 
 
 /// Represents a [Transition] in the state machine.
-class Transition{}
+class Transition{
+  final Token token;
+  Transition(this.token);
+}
 
-class Dispatched extends Transition {}
-class LastMatchDispatched extends Transition{}
+class Dispatch extends Transition {Dispatch(t):super(t);}
+class DispatchLastMatch extends Transition{DispatchLastMatch(t):super(t);}
+class NoMatch {}
 
 /// Reperesents a [State] in the state machine.
 class State {
@@ -109,17 +118,17 @@ class State {
   /// Rules defined for this state.
   final List<Rule> rules;
 
-  /// Output stream where [Token]s are added to.
-  final StreamController<Token> outputStream;
-
   final int position;
 
 
-  State(this.rules, this.outputStream, this.position,
+  State(this.rules, this.position,
         [this.matchStr='', this.lastMatch]);
 
   /// Find next state.
   State derive(ch){
+    if(rules.isEmpty) {
+      throw new NoMatch();
+    }
     if(lastMatch != null){
       return deriveLastMatch(ch);
     }
@@ -130,7 +139,7 @@ class State {
   State deriveRules(ch) {
     matchStr += ch;
     return new State(rules.map((_) => _.derive(ch)).where((_) => !_.isReject),
-                     outputStream, position, this.matchStr, this.lastMatch);
+                     position, this.matchStr, this.lastMatch);
   }
 
   /// Find next state for last match.
@@ -138,10 +147,9 @@ class State {
     var ds = lastMatch.derive(ch);
     if(ds.isMatchable){
       matchStr += ch;
-      return new State(rules, outputStream, position, matchStr, ds);
+      return new State(rules, position, matchStr, ds);
     }
-    outputStream.add(ds.action(matchStr)..position = position);
-    throw new LastMatchDispatched();
+    throw new DispatchLastMatch(ds.action(matchStr)..position = position);
   }
 
   /// Return list of exact match rules for the current state.
@@ -151,13 +159,13 @@ class State {
   List<Rule> findPossibleMatches() => rules.where((_) => _.isMatchable);
 
   /// Dispatch [Rule.action] to the output stream.
-  void dispatch() => outputStream.add(rules.first.action(matchStr)
-    ..position=position);
+  Token dispatch() => rules.first.action(matchStr)..position=position;
 
-  void dispatchLastMatch() {
+  Token dispatchLastMatch() {
     if(lastMatch != null){
-      outputStream.add(lastMatch.action(matchStr)..position=position);
+      return lastMatch.action(matchStr)..position=position;
     }
+    return null;
   }
 }
 
@@ -175,8 +183,7 @@ class ExactMatch extends Condition {
     var matches = state.findExactMatches();
     if(matches.length > 1) throw "More that one match is not supported yet";
     if(matches.length == 1) {
-      state.dispatch();
-      throw new Dispatched();
+      throw new Dispatch(state.dispatch());
     }
   }
 }

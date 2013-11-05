@@ -111,29 +111,61 @@ class Star extends Language {
 }
 
 
-/// Helper [Language] represents a letter [a..z] [A..Z]
-class Letter extends Character {
+/// Helper [Language] represents a letter [a..z] [A..Z].
+class Letter extends Language {
   Language derive(dynamic c) {
-    if(c is! String) return empty;
+    if(c is! String) return reject;
     if(a_z(c) || A_Z(c))
       return match;
-    return empty;
+    return reject;
   }
   bool a_z(String c) => c.codeUnitAt(0) >= 'a'.codeUnitAt(0) &&
                         c.codeUnitAt(0) <= 'z'.codeUnitAt(0);
 
   bool A_Z(String c) => c.codeUnitAt(0) >= 'A'.codeUnitAt(0) &&
                         c.codeUnitAt(0) <= 'Z'.codeUnitAt(0);
+  toString() => '<LETTER>';
 }
 
-/// Helper [Language] represents a digit 0..9
-class Digit extends Character {
+/// Helper [Language] represents a digit 0..9.
+class Digit extends Language {
   Language derive(dynamic c) {
-    if(c is! String) return empty;
+    if(c is! String) return reject;
     if(digit(c))
       return match;
-    return empty;
+    return reject;
   }
   bool digit(String c) => c.codeUnitAt(0) >= '0'.codeUnitAt(0) &&
                           c.codeUnitAt(0) <= '9'.codeUnitAt(0);
+  toString() => '<DIGIT>';
+}
+
+
+/// Helper [Language] represents a newline character.
+class Newline extends Language {
+  Language derive(dynamic c) {
+    if(c is! String) return reject;
+    if(c == '\r' || c == '\n')
+      return match;
+    return reject;
+  }
+  toString() => '<NEWLINE>';
+}
+
+/// Helper [Language] represents a not character.
+class NotCharacter extends Character {
+  Language derive(dynamic c) => (ch == c) ? reject : match;
+  toString() => '<NOT($ch)>';
+}
+
+/// Helper [Language] represents the revese of another [Language].
+class Not extends Language {
+  final Language language;
+  Not(this.language);
+  Language derive(dynamic c) {
+    var d = language.derive(c);
+    if(d == match) return reject;
+    else if(d == reject) return match;
+    return d;
+  }
 }

@@ -54,5 +54,8 @@ Language word(String str){
   return result;
 }
 
-Language letter = new Letter();
-Language digit = new Digit();
+Language LETTER = new Letter();
+Language DIGIT = new Digit();
+Language NEWLINE = new Newline();
+Language not(Language language) => new Not(language);
+Language notChar(String char) => new NotCharacter(char);
