@@ -63,7 +63,7 @@ class Or extends Language {
   Language derive (String c) {
     return new Or(left.derive(c), right.derive(c));
   }
-  toString() => '$left|$right';
+  toString() => '$left | $right';
 }
 
 /// A [Language] that matches two [Language]s in sequence.
@@ -90,7 +90,11 @@ class And extends Language {
     }
     return new And(left.derive(c), right);
   }
-  toString() => '$left$right';
+  toString() {
+    if(left is Character && right is Character)
+      return " '$left$right' ";
+    return '$left$right';
+  }
 }
 
 
@@ -107,7 +111,7 @@ class Star extends Language {
     return new Star._internal(language);
   }
   Language derive(ch) => new And(language.derive(ch), new Star(language));
-  toString() => '$language*';
+  toString() => '($language)*';
 }
 
 
@@ -155,7 +159,7 @@ class Newline extends Language {
 /// Helper [Language] represents a not character.
 class NotCharacter extends Character {
   Language derive(dynamic c) => (ch == c) ? reject : match;
-  toString() => '<NOT($ch)>';
+  toString() => '~<$ch>';
 }
 
 /// Helper [Language] represents the revese of another [Language].
@@ -168,4 +172,5 @@ class Not extends Language {
     else if(d == reject) return match;
     return d;
   }
+  toString() => '~{$language}';
 }
