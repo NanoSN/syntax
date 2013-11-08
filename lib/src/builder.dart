@@ -39,7 +39,8 @@ Language exactly(dynamic language, {int times:1}){
 Language toLanguage(dynamic thing){
   if(thing is String) return word(thing);
   if(thing is Language) return thing;
-  throw 'Unknown type of language: [$thing]';
+  if(thing is Rule) return thing.language;
+  throw 'Unknown type of language: [$thing] was [${thing.runtimeType}]';
 }
 
 
@@ -57,5 +58,5 @@ Language word(String str){
 Language LETTER = new Letter();
 Language DIGIT = new Digit();
 Language NEWLINE = new Newline();
-Language not(Language language) => new Not(language);
+Language not(dynamic thing) => new Not(toLanguage(thing));
 Language notChar(String char) => new NotCharacter(char);
