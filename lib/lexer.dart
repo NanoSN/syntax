@@ -6,6 +6,18 @@ part 'src/language.dart';
 part 'src/rules.dart';
 part 'src/builder.dart';
 
+class Debug {
+  List<State> stacktrace = <State>[];
+  void addTrace(State state) => stacktrace.add(state);
+  String toString(){
+    String str = '';
+    for(final state in stacktrace){
+      str += '${state.rules}: "${state.matchStr}"\n';
+    }
+    return str;
+  }
+}
+
 class Token {
   final String value;
   int position;
@@ -17,6 +29,7 @@ class Token {
 /// Main entry for lexing.
 class Lexer extends Stream<Token> {
 
+  final debug = new Debug();
   /// Rules defined for lexing.
   final List<Rule> rules;
 
@@ -74,7 +87,7 @@ class Lexer extends Stream<Token> {
 
   void _onData(String ch){
     position ++;
-
+    debug.addTrace(state);
     try{
       state = state.derive(ch);
       new ExactMatch(state).evaluate();
@@ -87,6 +100,7 @@ class Lexer extends Stream<Token> {
       outputStream.add(transition.token);
       state = new State(rules, position).derive(ch);
     } on NoMatch catch(e){
+      print(debug);
       _subscription.cancel();
       outputStream.addError(e);
     }
@@ -103,7 +117,11 @@ class Transition{
 
 class Dispatch extends Transition {Dispatch(t):super(t);}
 class DispatchLastMatch extends Transition{DispatchLastMatch(t):super(t);}
-class NoMatch {}
+class NoMatch {
+  final value;
+  NoMatch(this.value);
+  toString() => "$NoMatch('$value')";
+}
 
 /// Reperesents a [State] in the state machine.
 class State {
@@ -125,9 +143,10 @@ class State {
         [this.matchStr='', this.lastMatch]);
 
   /// Find next state.
+  /// TODO: I need to favor 'matchables' over 'exactMatch' if any exist.
   State derive(ch){
     if(rules.isEmpty) {
-      throw new NoMatch();
+      throw new NoMatch(this);
     }
     if(lastMatch != null){
       return deriveLastMatch(ch);
@@ -180,6 +199,7 @@ class ExactMatch extends Condition {
 
   void evaluate(){
     if(state.lastMatch != null) return;
+    if(state.findPossibleMatches().length > 0) return;
     var matches = state.findExactMatches();
     if(matches.length > 1) throw "More that one match is not supported yet";
     if(matches.length == 1) {
