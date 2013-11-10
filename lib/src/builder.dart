@@ -60,3 +60,22 @@ Language DIGIT = new Digit();
 Language NEWLINE = new Newline();
 Language not(dynamic thing) => new Not(toLanguage(thing));
 Language notChar(String char) => new NotCharacter(char);
+
+
+class _RuleBuilder extends Rule {
+  _RuleBuilder(dynamic thing): super(toLanguage(thing));
+  void switchTo(LexerState state){
+    action = (Lexer _) => _.currentState = state;
+  }
+  void emit(Token token) {
+    action = (Lexer _) {
+      token.value = _.matchStr; // _.m
+      token.position = _.position;
+      _.emit(token);
+    };
+  }
+
+  void call(Action act){
+    action = act;
+  }
+}

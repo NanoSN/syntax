@@ -1,17 +1,18 @@
 library lexer;
 
 import 'dart:async';
+import 'dart:collection';
 
 part 'src/language.dart';
 part 'src/rules.dart';
 part 'src/builder.dart';
 part 'src/states.dart';
-
+part 'src/debug.dart';
 
 class Token {
-  final String value;
+  String value;
   int position;
-  Token(this.value);
+  Token([this.value, this.position]);
   toString() => '$runtimeType: $value(${value.length}):$position';
 
 }
@@ -65,16 +66,24 @@ abstract class StreamPart {
   _onDone();
 }
 
-class SwitchStateRule extends Rule {
-  LexerState nextState;
-  SwitchStateRule(language, [this.nextState]): super(language){
-    action = (Lexer _) => _.currentState = nextState;
-  }
-  switchTo(LexerState state){
-    nextState = state;
-  }
-  SwitchStateRule derive(dynamic ch) =>
-      new SwitchStateRule(language.derive(ch), nextState);
+/** Mixin class to add internal state functionality to a state.
+ * TODO: this does not work as a mixin. because of mixin limitation
+ *       that it can only apply if class has no constructor.
+ *
+ *  In this case if we created a class with this as mixin
+ *  class Comments extends LexerState with InternalState {}
+ *  the compiler will complain:
+ *  """forwarding constructors must not have optional parameters
+ *  class Comments extends LexerState with InternalState {"""
+ *                                         ^
+ */
+class InternalState {
+  int internalState = 0;
+
+  ///TODO: this might be dangerous when ++ += -- -= are used.
+  /// It is usually expecting a new object o+1, o+=1.
+  operator +(n) => this..internalState += n;
+  operator -(n) => this..internalState -= n;
 }
 
 class LexerState {
@@ -113,6 +122,7 @@ class LexerState {
     new LexerState(rules.map((_) => _.derive(ch)).where((_) => !_.isReject),
                    this.lastMatch, this._initState);
 
+
   /// Find next state for last match.
   LexerState deriveLastMatch(ch, context){
     var ds = lastMatch.derive(ch);
@@ -130,11 +140,11 @@ class LexerState {
   /// Return list of possible match rules for the current state.
   List<Rule> findPossibleMatches() => rules.where((_) => _.isMatchable);
 
-  List<Rule> findSwitchStateRules() =>
-      findExactMatches().where((_) => _ is SwitchStateRule);
+  /// Return list of possible match rules for the current state.
+  List<Rule> findNotRejects() => rules.where((_) => !_.isReject);
 
-  SwitchStateRule on(language){
-    var rule = new SwitchStateRule(toLanguage(language));
+  _RuleBuilder on(dynamic language){
+    var rule = new _RuleBuilder(language);
     rules.add(rule);
     return rule;
   }
@@ -143,8 +153,15 @@ class LexerState {
 
 
 class Lexer extends Stream<Token> with StreamPart, Context {
+
+  ///Debugging
+  var debug = new Debug();
+
   /// Matching string so far.
   String matchStr = '';
+  int position = 0;
+  int get p => position;
+  String get m => matchStr;
 
   Lexer(initialState, inputStream){
     this.initialState = initialState;
@@ -155,24 +172,34 @@ class Lexer extends Stream<Token> with StreamPart, Context {
 
   //Stream part implementation
   _onData(String ch){
-    print("$currentState: '$matchStr'");
-    matchStr += ch;
-    currentState = currentState.derive(ch, this);
-
     try {
+      debug.addTrace(new Trace(ch:ch, state:currentState, matchStr:matchStr));
+      currentState = currentState.derive(ch, this);
+      matchStr += ch; //This has to be in this order.
+      canMatchMore(this);
       exactMatch(this);
       matchable(this);
-    } on Continue {}
+    } on Continue {
+    } on NoMatch catch(e){
+      if(DEBUG) print(debug);
+      _subscription.cancel();
+      outputStream.addError(e);
+    }
   }
 
   _onDone(){
-    print(currentState);
+    if(currentState.lastMatch != null)
+      currentState.lastMatch.action(this);
+
+    if(!matchStr.isEmpty) outputStream.addError(new NoMatch(this));
+    if(DEBUG) print(debug);
   }
 
   /// Public methods
   emit(token){
     outputStream.add(token);
     currentState = initialState;
+    position+= matchStr.length;
     matchStr = '';
   }
 }
@@ -200,5 +227,11 @@ void matchable(Lexer context){
   if(matchables.length > 1) throw "More that one matchable not supported yet";
   if(matchables.length == 1) {
     context.currentState.lastMatch = matchables.first;
+  }
+}
+
+void canMatchMore(Lexer context){
+  if(context.currentState.findNotRejects().length > 1){
+    throw new Continue();
   }
 }
