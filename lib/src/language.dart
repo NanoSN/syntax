@@ -158,6 +158,7 @@ class Newline extends Language {
 
 /// Helper [Language] represents a not character.
 class NotCharacter extends Character {
+  NotCharacter(ch):super(ch);
   Language derive(dynamic c) => (ch == c) ? reject : match;
   toString() => '~<$ch>';
 }
@@ -170,7 +171,7 @@ class Not extends Language {
     var d = language.derive(c);
     if(d == match) return reject;
     else if(d == reject) return match;
-    return d;
+    return new Not(d);
   }
   toString() => '~{$language}';
 }
