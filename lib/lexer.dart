@@ -129,6 +129,10 @@ class LexerState {
     if(ds.isMatchable){
       return new LexerState(rules, ds, this._initState);
     }
+    //If we can accept more .. keep going
+    var current = deriveRules(ch);
+    if(current.findNotRejects().length > 0) return current;
+
     //TODO: would this crash if action is trying to change state?
     ds.action(context);
     return _initState.derive(ch, context);
@@ -231,7 +235,12 @@ void matchable(Lexer context){
 }
 
 void canMatchMore(Lexer context){
-  if(context.currentState.findNotRejects().length > 1){
+  var more = context.currentState.findNotRejects();
+  if(more.length > 1){
+    var exact = context.currentState.findExactMatches();
+    if(exact.length > 0){
+      context.currentState.lastMatch = exact.first;
+    }
     throw new Continue();
   }
 }
