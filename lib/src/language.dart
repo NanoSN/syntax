@@ -114,6 +114,22 @@ class Star extends Language {
   toString() => '($language)*';
 }
 
+/// A [Language] that matches zero or one of a [Language].
+class Optional extends Language {
+  final Language language;
+
+  bool get isMatchable => true;
+
+  Optional._internal(this.language);
+  factory Optional(language){
+    if(language == match) return match;
+    if(language == reject) return reject;
+    return new Optional._internal(language);
+  }
+  Language derive(ch) => language.derive(ch);
+  toString() => '($language)?';
+}
+
 
 /// Helper [Language] represents a letter [a..z] [A..Z].
 class Letter extends Language {

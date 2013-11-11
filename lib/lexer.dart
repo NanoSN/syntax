@@ -152,6 +152,9 @@ class LexerState {
     rules.add(rule);
     return rule;
   }
+
+  ///Syntactic sugar
+  operator <<(dynamic language) => on(language);
   toString() => '$runtimeType: $rules';
 }
 
@@ -167,8 +170,11 @@ class Lexer extends Stream<Token> with StreamPart, Context {
   int get p => position;
   String get m => matchStr;
 
-  Lexer(initialState, inputStream){
-    this.initialState = initialState;
+  LexerState INIT = new LexerState();
+
+  Lexer(inputStream, [initState]){
+    if(initState != null) INIT = initState;
+    this.initialState = INIT;
     this.currentState = initialState;
     this.inputStream = inputStream;
     init();
@@ -176,8 +182,10 @@ class Lexer extends Stream<Token> with StreamPart, Context {
 
   //Stream part implementation
   _onData(String ch){
+    if(currentState == null) currentState = initialState;
     try {
-      debug.addTrace(new Trace(ch:ch, state:currentState, matchStr:matchStr));
+      if(DEBUG)
+        debug.addTrace(new Trace(ch:ch, state:currentState, matchStr:matchStr));
       currentState = currentState.derive(ch, this);
       matchStr += ch; //This has to be in this order.
       canMatchMore(this);
@@ -185,7 +193,7 @@ class Lexer extends Stream<Token> with StreamPart, Context {
       matchable(this);
     } on Continue {
     } on NoMatch catch(e){
-      if(DEBUG) print(debug);
+      //if(DEBUG) print(debug);
       _subscription.cancel();
       outputStream.addError(e);
     }

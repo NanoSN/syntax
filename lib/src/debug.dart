@@ -14,7 +14,10 @@ class Trace {
 
 class Debug {
   final Queue<Trace> stacktrace = new Queue<Trace>();
-  void addTrace(Trace trace) => stacktrace.addFirst(trace);
+  void addTrace(Trace trace) {
+    print(trace);
+    stacktrace.addFirst(trace);
+  }
   String toString() => stacktrace.join('\n');
 }
 

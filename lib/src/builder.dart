@@ -25,6 +25,7 @@ Language or(List<dynamic> languages){
 Language oneOrMore(dynamic language) => new And(toLanguage(language),
                                                 new Star(toLanguage(language)));
 Language zeroOrMore(dynamic language) => new Star(toLanguage(language));
+Language zeroOrOne(dynamic language) => new Optional(toLanguage(language));
 Language exactly(dynamic language, {int times:1}){
   language = toLanguage(language);
   var result = language;
@@ -62,13 +63,20 @@ Language not(dynamic thing) => new Not(toLanguage(thing));
 Language notChar(String char) => new NotCharacter(char);
 
 
+typedef Token TokenCreator();
+typedef LexerState StateCreator();
+
 class _RuleBuilder extends Rule {
   _RuleBuilder(dynamic thing): super(toLanguage(thing));
-  void switchTo(LexerState state){
-    action = (Lexer _) => _.currentState = state;
-  }
-  void emit(Token token) {
+  void switchTo(dynamic stateLike){
     action = (Lexer _) {
+      if(stateLike is StateCreator) {_.currentState = stateLike();}
+      else _.currentState = stateLike;
+    };
+  }
+  void emit(TokenCreator creator) {
+    action = (Lexer _) {
+      var token = creator();
       token.value = _.matchStr; // _.m
       token.position = _.position;
       _.emit(token);
@@ -78,4 +86,7 @@ class _RuleBuilder extends Rule {
   void call(Action act){
     action = act;
   }
+
+  operator <=(TokenCreator creator) => emit(creator);
+  operator >>(TokenCreator creator) => emit(creator);
 }
