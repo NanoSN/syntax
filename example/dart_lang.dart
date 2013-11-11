@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:parse/lexer2.dart';
+import 'package:parse/lexer.dart';
 
 class ReservedWord extends Token {}
 class WhiteSpace extends Token {}
