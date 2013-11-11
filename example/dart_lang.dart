@@ -21,13 +21,23 @@ class Comments extends LexerState {//with InternalState {}
   }
 }
 
+var keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
+                'continue', 'default', 'do', 'else', 'enum', 'extends',
+                'false', 'finally', 'final', 'for', 'if', 'in', 'is', 'new',
+                'null', 'rethrow', 'return', 'super', 'switch', 'this', 'throw',
+                'true', 'try', 'var', 'void', 'while', 'with'];
+
+/// States
 var INIT = new Init();
 var COMMENTS = new Comments();
 
 initRules(){
+  // Keywords.
+  for(final k in keywords){
+    INIT.on(k).emit( new ReservedWord() );
+  }
   INIT
-    // Keywords.
-    ..on( or(['if', 'else']) ).emit( new ReservedWord() )
+//    ..on( or(keywords) ).emit( new ReservedWord() )
 
     //Spaces.
     ..on( oneOrMore(or(['\t', ' ', NEWLINE])) ).emit(new WhiteSpace())
@@ -53,19 +63,9 @@ commentRules(){
     });
 }
 
-
-main(){
- // DEBUG = true;
-  initRules();
-  commentRules();
-
-  var data = """
-  if
-/* else
-lkjdfakls jdklsa jlkdfs jfdlsk jfskladj lkfsjd
-*/ else  """.split('');
-  var stream = new Stream.fromIterable(data);  // create the stream
-//  var rules = [reservedWords, spacesRule];
-  var lexer = new Lexer(INIT, stream);
-  lexer.listen((v)=> print(v));
+class DartLexer extends Lexer {
+  DartLexer(stream): super(INIT, stream){
+    initRules();
+    commentRules();
+  }
 }
