@@ -197,6 +197,7 @@ class Lexer extends Stream<Token> with StreamPart, Context {
 
     if(!matchStr.isEmpty) outputStream.addError(new NoMatch(this));
     if(DEBUG) print(debug);
+    outputStream.close();
   }
 
   /// Public methods
