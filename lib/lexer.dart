@@ -86,7 +86,6 @@ class Lexer extends TokenStream implements Context {
     try{
       currentState = this.next(ch);
     } on NoMatch catch(e){
-      print(e);
       _subscription.cancel();
       outputStream.addError(e);
     }

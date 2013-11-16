@@ -160,6 +160,23 @@ class Digit extends Language {
   toString() => '<DIGIT>';
 }
 
+/// Helper [Language] represents a hex digit 0..9 A..F a..f.
+class HexDigit extends Language {
+  Language derive(dynamic c) {
+    if(c is! String) return reject;
+    if(isBetween(c, '0', '9') ||
+       isBetween(c, 'a', 'f') ||
+       isBetween(c, 'A', 'F')) {
+       return match;
+     }
+    return reject;
+  }
+  bool isBetween(String c, String from, String to) =>
+      c.codeUnitAt(0) >= from.codeUnitAt(0) &&
+      c.codeUnitAt(0) <= to.codeUnitAt(0);
+  toString() => '<HEX_DIGIT>';
+}
+
 
 /// Helper [Language] represents a newline character.
 class Newline extends Language {

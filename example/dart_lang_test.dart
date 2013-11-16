@@ -137,6 +137,179 @@ try var void while with''';
         });
       });
     });
+
+    group('Identifier', (){
+      test('usual.', (){
+        var input = 'nameing';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Identifier;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+      test('starts with reserved word.', (){
+        var input = 'thisisaname';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Identifier;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("starts with '\$'.", (){
+        var input = '\$fun';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Identifier;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("starts with '_'.", (){
+        var input = '_fun';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Identifier;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+
+      // TODO(sam): this test fails because 2 tokens are generated
+      //            Number and Identifier. Is this the way it should be?
+      skip_test("cannot starts with 'digit'.", (){
+        var input = '1fun';
+        Future<List<Token>> match = lex(input);
+        expect(match, throws);
+        match..catchError((error) {
+          expect(error is NoMatch, isTrue);
+        });
+      });
+    });
+
+    group('Number', (){
+      test("'1324'.", (){
+        var input = '1324';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("'13.24'.", (){
+        var input = '13.24';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("'1324e+10'.", (){
+        var input = '1324e+10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("'1324e-10'.", (){
+        var input = '1324e-10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+      test("'1324e10'.", (){
+        var input = '1324e10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+      test("'13.24e+10'.", (){
+        var input = '13.24e+10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+
+      test("'13.24e-10'.", (){
+        var input = '13.24e-10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+      test("'13.24e10'.", (){
+        var input = '13.24e10';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+    });
+
   });
 }
 
@@ -148,7 +321,6 @@ Future<List<Token>> lex(String input){
   lexer.listen( (token) {
                 result.add(token);},
                 onError: (_) {
-                  print(_);
                   _completer.completeError(_);
                 },
                 onDone: () => _completer.complete(result));
