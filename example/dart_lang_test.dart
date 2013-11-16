@@ -38,8 +38,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is SingleLineComment;
+          var token = tokens[0];
+          var actual = token is SingleLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
 
@@ -50,8 +52,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is SingleLineComment;
+          var token = tokens[0];
+          var actual = token is SingleLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
 
@@ -62,8 +66,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is SingleLineComment;
+          var token = tokens[0];
+          var actual = token is SingleLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
     });
@@ -76,8 +82,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is MultiLineComment;
+          var token = tokens[0];
+          var actual = token is MultiLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
 
@@ -90,8 +98,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is MultiLineComment;
+          var token = tokens[0];
+          var actual = token is MultiLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
       test('doc comment.', (){
@@ -103,8 +113,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is MultiLineComment;
+          var token = tokens[0];
+          var actual = token is MultiLineComment;
           expect(actual, isTrue);
+          expect(token.value, equals(input));
         });
       });
 
@@ -118,9 +130,10 @@ try var void while with''';
 
         match.then((tokens) {
           expect(tokens.length, equals(1));
-          var actual = tokens[0] is MultiLineComment;
+          var token = tokens[0];
+          var actual = token is MultiLineComment;
           expect(actual, isTrue);
-          expect(tokens[0].value, equals(input));
+          expect(token.value, equals(input));
         });
       });
     });

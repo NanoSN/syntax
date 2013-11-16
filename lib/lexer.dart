@@ -54,7 +54,7 @@ class State {
   }
 
   ///Syntactic sugar
-  operator <<(dynamic language) => on(language);
+  operator / (dynamic language) => on(language);
   toString() => '$runtimeType: $rules, Matched: "$matchedInput"';
 }
 

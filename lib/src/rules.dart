@@ -1,6 +1,6 @@
 part of lexer;
 
-typedef void Action(Lexer context);
+typedef void Action(State state, Lexer context);
 
 class Rule {
   Language language;
