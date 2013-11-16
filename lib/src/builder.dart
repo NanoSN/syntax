@@ -69,15 +69,20 @@ typedef LexerState StateCreator();
 class _RuleBuilder extends Rule {
   _RuleBuilder(dynamic thing): super(toLanguage(thing));
   void switchTo(dynamic stateLike){
-    action = (Lexer _) {
-      if(stateLike is StateCreator) {_.currentState = stateLike();}
-      else _.currentState = stateLike;
+    action = (State state, Lexer _) {
+      if(stateLike is StateCreator) {
+        return stateLike()..matchedInput = state.matchedInput;
+      }
+      else if (stateLike is State) {
+        return stateLike..matchedInput = state.matchedInput;
+      }
+      else throw 'I dont know. its not a State!!!';
     };
   }
   void emit(TokenCreator creator) {
-    action = (Lexer _) {
+    action = (State state, Lexer _) {
       var token = creator();
-      token.value = _.matchStr; // _.m
+      token.value = state.matchedInput; //_.matchStr; // _.m
       token.position = _.position;
       _.emit(token);
     };

@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:unittest/unittest.dart';
-import 'package:parse/lexer.dart';
+import 'package:parse/lexer3.dart';
 import './dart_lang.dart';
 
 main(){
-  DEBUG=true;
+DEBUG=true;
   group('Dart Language', (){
     test('Keywords/reserved words.', (){
       String input = '''
@@ -98,7 +98,6 @@ try var void while with''';
         var input = '''/**
         This is a multi line doc
         comment */''';
-        print('t1');
         Future<List<Token>> match = lex(input);
         expect(match, completes);
 
@@ -109,12 +108,11 @@ try var void while with''';
         });
       });
 
-      solo_test('nested.', (){
+      test('nested.', (){
         var input = '''/*
         This is a /* multi line comment
         in a multi line comment */
         */''';
-        print('t2');
         Future<List<Token>> match = lex(input);
         expect(match, completes);
 
@@ -122,6 +120,7 @@ try var void while with''';
           expect(tokens.length, equals(1));
           var actual = tokens[0] is MultiLineComment;
           expect(actual, isTrue);
+          expect(tokens[0].value, equals(input));
         });
       });
     });
@@ -133,9 +132,10 @@ Future<List<Token>> lex(String input){
   var stream = new Stream.fromIterable(input.split(''));
   var lexer = new DartLexer(stream);
   var result = new List<Token>();
-  lexer.listen( (token) {result.add(token);},
+  lexer.listen( (token) {
+                result.add(token);},
                 onError: (_) {
-//                  print(_.value.debug);
+                  print(_);
                   _completer.completeError(_);
                 },
                 onDone: () => _completer.complete(result));
