@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:unittest/unittest.dart';
-import 'package:parse/lexer3.dart';
+import 'package:parse/lexer.dart';
 import './dart_lang.dart';
 
 main(){
