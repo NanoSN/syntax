@@ -322,8 +322,60 @@ main(){
           expect(token.value, equals(input));
         });
       });
+      test("'hex 0xAB'.", (){
+        var input = '0xAB';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+      test("'hex 0XAB'.", (){
+        var input = '0XAB';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          var actual = token is Number;
+          expect(actual, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
     });
 
+    group('Escape Sequence', (){
+      test(r'\n \r \f \b \t \v', (){
+        var input = r'\n\r\f\b\t\v';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(6));
+          var value = tokens.map((_) => _.value).join('');
+          var actual = tokens.every((_) => _ is EscapeSequence);
+          expect(actual, isTrue);
+          expect(value, equals(input));
+        });
+      });
+    });
+    group('Whitespace and Newline', (){
+      test(r'\n is whitespace and newline', (){
+        var input = '\n';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(1));
+          var token = tokens[0];
+          expect(token is NewLine, isTrue);
+          expect(token is WhiteSpace, isTrue);
+          expect(token.value, equals(input));
+        });
+      });
+    });
   });
 }
 

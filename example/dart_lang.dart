@@ -2,12 +2,17 @@ import 'package:parse/lexer.dart';
 
 class ReservedWord extends Token {}
 class BuiltInIdentifier extends Token {}
+
+/// Parser needs to distinguish between NEWLINE and WHITESPACE
 class WhiteSpace extends Token {}
+class NewLine extends WhiteSpace {}
+
 class SingleLineComment extends Token {}
 class MultiLineComment extends Token {MultiLineComment(v,p):super(v,p);}
 
 class Identifier extends Token {}
 class Number extends Token {}
+class EscapeSequence extends Token {}
 
 List<String> keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
                 'continue', 'default', 'do', 'else', 'enum', 'extends',
@@ -54,8 +59,6 @@ HEX_NUMBER:
 Language HEX_NUMBER = or([ and([ '0x', oneOrMore(HEX_DIGIT) ]),
                            and([ '0X', oneOrMore(HEX_DIGIT) ]) ]);
 
-
-
 /**
 ESCAPE_SEQUENCE:
      ‘\n’
@@ -68,7 +71,21 @@ ESCAPE_SEQUENCE:
    | ‘\u’ HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
    | ‘\u{‘ HEX_DIGIT_SEQUENCE ‘}’
 */
+List escapeSequences = [
+    r'\n',
+    r'\r',
+    r'\f',
+    r'\b',
+    r'\t',
+    r'\v',
+    and([ r'\x', HEX_DIGIT, HEX_DIGIT ]),
+    and([ r'\u', HEX_DIGIT, HEX_DIGIT, HEX_DIGIT, HEX_DIGIT]),
+    and([ r'\u{', HEX_DIGIT_SEQUENCE, '}' ])
+];
 
+Language HEX_DIGIT_SEQUENCE = and([
+    HEX_DIGIT, optional(HEX_DIGIT), optional(HEX_DIGIT),
+    optional(HEX_DIGIT), optional(HEX_DIGIT), optional(HEX_DIGIT) ]);
 
 class Main extends State {
   Main(){
@@ -87,8 +104,14 @@ class Main extends State {
 
     this / or([ NUMBER, HEX_NUMBER ]) / () => new Number();
 
+    // Escape Sequences
+    for(final seq in escapeSequences){
+      this / seq / () => new EscapeSequence();
+    }
+
     // Spaces.
-    this / oneOrMore(or(['\t', ' ', NEWLINE])) / () => new WhiteSpace();
+    this / oneOrMore(or([ '\t', ' ' ])) / () => new WhiteSpace();
+    this / NEWLINE / () => new NewLine();
 
     // Single line comments
     this / rx(['//', zeroOrMore(not(NEWLINE)), zeroOrOne(NEWLINE)]) /
@@ -96,6 +119,7 @@ class Main extends State {
 
     // Multi line comments
     on('/*') <= () => new Comments();
+
 
   }
 }
