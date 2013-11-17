@@ -5,21 +5,35 @@ import 'package:parse/lexer.dart';
 import './dart_lang.dart';
 
 main(){
-DEBUG=true;
   group('Dart Language', (){
     test('Keywords/reserved words.', (){
-      String input = '''
-assert break case catch class const continue default do else enum extends false
-final finally for if in is new null rethrow return super switch this throw true
-try var void while with''';
+      String input = keywords.join(' ');
       Future<List<Token>> match = lex(input);
       expect(match, completes);
 
       match.then((tokens) {
-        expect(tokens.length, equals(65));
+        expect(tokens.length, equals(keywords.length*2-1));
 
         var expected = input.split(new RegExp(r'[\s\n]'));
         var actual = new List.from(tokens.where((_) => _ is ReservedWord));
+        expect(actual.length, expected.length);
+
+        //All tokens must be in the same order as input
+        for(int i=0; i<expected.length; i++){
+          expect(actual[i].value, equals(expected[i]));
+        }
+      });
+    });
+    test('Built in identifiers.', (){
+      String input = builtInIdentifiers.join(' ');
+      Future<List<Token>> match = lex(input);
+      expect(match, completes);
+
+      match.then((tokens) {
+        expect(tokens.length, equals(builtInIdentifiers.length*2-1));
+
+        var expected = builtInIdentifiers;
+        var actual = new List.from(tokens.where((_) => _ is BuiltInIdentifier));
         expect(actual.length, expected.length);
 
         //All tokens must be in the same order as input

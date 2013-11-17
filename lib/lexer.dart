@@ -42,7 +42,15 @@ class State {
                 rules.map((_) => _.derive(ch)).where((_) => !_.isReject));
 
   State dispatch(Context context){
-    var stateLike = rules.first.action(this, context);
+    List exactMatch = rules.where((_) => _.isMatch);
+    List matchables = rules.where((_) => _.isMatchable);
+    var stateLike;
+
+    if(!exactMatch.isEmpty)
+      stateLike = exactMatch.first.action(this, context);
+    else if(!matchables.isEmpty)
+      stateLike = matchables.first.action(this, context);
+    else throw rules;
     if(stateLike is State) return stateLike;
     return context.initialState;
   }

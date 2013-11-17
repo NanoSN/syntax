@@ -1,0 +1,921 @@
+
+/// Variables
+variableDeclaration:
+        declaredIdentifier (',' identifier)*
+    ;
+
+declaredIdentifier:
+        metadata  finalConstVarOrType identifier
+    ;
+
+finalConstVarOrType:
+        final type?
+    |   const type?
+    |   varOrType
+    ;
+
+varOrType:
+        var
+    |   type
+    ;
+
+initializedVariableDeclaration:
+        declaredIdentifier ('=' expression)? (',' initializedIdentifier)*
+    ;
+
+initializedIdentifier:
+        identifier ('=' expression)?
+    ;
+
+initializedIdentifierList:
+        initializedIdentifier (',' initializedIdentifier)*
+    ;
+
+
+/// Functions
+functionSignature:
+        metadata returnType? identifier formalParameterList
+    ;
+returnType:
+        void
+    |   type
+    ;
+
+functionBody:
+        '=>' expression ';'
+    |   block
+    ;
+
+block:
+        '{' statements '}'
+    ;
+
+/// Function Declarations
+/// Formal Parameters
+formalParameterList:
+        '(' ')'
+    |   '(' normalFormalParameters ( ‘,’ optionalFormalParameters)? ')'
+    |   '(' optionalFormalParameters ')'
+    ;
+normalFormalParameters:
+        normalFormalParameter (',' normalFormalParameter)*
+    ;
+optionalFormalParameters:
+        optionalPositionalFormalParameters
+    |   namedFormalParameters
+    ;
+optionalPositionalFormalParameters:
+        '[' defaultFormalParameter (',' defaultFormalParameter)* ']'
+    ;
+
+
+namedFormalParameters:
+        '{' defaultNamedParameter(',' defaultNamedParameter)* '}'
+    ;
+
+/// Required Formals
+normalFormalParameter:
+        functionSignature
+    |   fieldFormalParameter
+    |   simpleFormalParameter
+    ;
+simpleFormalParameter:
+        declaredIdentifier
+    |   metadata identifier
+    ;
+
+fieldFormalParameter:
+        metadata finalConstVarOrType? this '.' identifier formalParameterList?
+    ;
+
+/// Optional Formals
+defaultFormalParameter:
+        normalFormalParameter ('=' expression)?
+    ;
+defaultNamedParameter:
+        normalFormalParameter (':' expression)?
+    ;
+
+/// Classes
+classDefinition:
+        metadata abstract? class identifier typeParameters?
+        (superclass mixins?)? interfaces?
+        '{' (metadata classMemberDefinition)* '}'
+    |   metadata abstract? class mixinApplicationClass
+    ;
+mixins:
+        with typeList
+    ;
+classMemberDefinition:
+        declaration ';'
+    |   methodSignature functionBody
+    ;
+methodSignature:
+        constructorSignature initializers?
+    |   factoryConstructorSignature
+    |   static? functionSignature
+    |   static? getterSignature
+    |   static? setterSignature
+    |   operatorSignature
+    ;
+
+declaration:
+        constantConstructorSignature (redirection | initializers)?
+    |   constructorSignature (redirection | initializers)?
+    |   external constantConstructorSignature
+    |   external constructorSignature
+    |   external factoryConstructorSignature
+    |   ((external static?))? getterSignature
+    |   ((external static?))? setterSignature
+    |   external? operatorSignature
+    |   ((external static?))? functionSignature
+    |   getterSignature
+    |   setterSignature
+    |   operatorSignature
+    |   functionSignature
+    |   static (final | const) type? staticFinalDeclarationList
+    |   const type? staticFinalDeclarationList
+    |   final type? initializedIdentifierList
+    |   static? (var | type) initializedIdentifierList
+    ;
+staticFinalDeclarationList:
+        ':' staticFinalDeclaration (',' staticFinalDeclaration)*
+    ;
+
+staticFinalDeclaration:
+        identifier '=' expression
+    ;
+
+/// Operators
+operatorSignature:
+        returnType? operator operator formalParameterList
+    ;
+
+operator:
+        '~'
+    |   binaryOperator
+    |   '[' ']'
+    |   '[' ']' '='
+    ;
+
+binaryOperator:
+        multiplicativeOperator
+    |   additiveOperator
+    |   shiftOperator
+    |   relationalOperator
+    |   ’==’
+    |   bitwiseOperator
+    ;
+
+/// Generative Constructors
+constructorSignature:
+        identifier ('.' identifier)? formalParameterList
+    ;
+
+/// Redirecting Constructors
+redirection:
+        ':' this ('.' identifier)? arguments
+    ;
+
+/// Initializer Lists
+initializers:
+     ':' superCallOrFieldInitializer (',' superCallOrFieldInitializer)*
+    ;
+superCallOrFieldInitializer:
+        super arguments
+    | super '.' identifier arguments
+    | fieldInitializer
+    ;
+
+fieldInitializer:
+        (this '.')? identifier '=' conditionalExpression cascadeSection*
+    ;
+
+/// Factories
+factoryConstructorSignature:
+        factory identifier ('.' identifier)? formalParameterList
+    ;
+
+/// Redirecting Factory Constructors
+redirectingFactoryConstructorSignature:
+        const? factory  identifier  ('.' identifier)?  formalParameterList `=’
+        type ('.' identifier)?
+    ;
+
+/// Constant Constructors
+constantConstructorSignature:
+        const qualified formalParameterList
+    ;
+
+/// Superclasses
+superclass:
+        extends type
+    ;
+
+/// Superinterfaces
+interfaces:
+        implements typeList
+    ;
+
+/// Mixin Application
+mixinApplicationClass:
+        identifier typeParameters?`=’  mixinApplication ‘;’
+mixinApplication:
+        type mixins  interfaces?
+    ;
+
+/// Generics
+typeParameter:
+        metadata   identifier (extends type)?
+    ;
+
+typeParameters:
+        '<' typeParameter (',' typeParameter)* '>'
+    ;
+
+/// Metadata
+'metadata'  :
+        ("@" qualified (‘.’ identifier)? (arguments)?)*
+    ;
+
+/// Expressions
+expression:
+        assignableExpression assignmentOperator expression
+    |   conditionalExpression cascadeSection*
+    |   throwExpression
+    ;
+
+
+expressionWithoutCascade:
+        assignableExpression assignmentOperator expressionWithoutCascade
+    |   conditionalExpression
+    |   throwExpressionWithoutCascade
+    ;
+expressionList:
+        expression (',' expression)*
+    ;
+
+primary:
+        thisExpression
+    |   super assignableSelector
+    |   functionExpression
+    |   literal
+    |   identifier
+    |   newExpression
+    |   constObjectExpression
+    |   '(' expression ')'
+    ;
+
+/// Literals
+literal:
+        nullLiteral
+    |   booleanLiteral
+    |   numericLiteral
+    |   stringLiteral
+    |   symbolLiteral
+    |   mapLiteral
+    |   listLiteral
+    ;
+
+nullLiteral:
+        null
+;
+
+/// Numbers
+numericLiteral:
+        NUMBER
+    |   HEX_NUMBER
+    ;
+NUMBER:
+        DIGIT+ ('.' DIGIT+)? EXPONENT?
+    |   '.' DIGIT+ EXPONENT?
+    ;
+EXPONENT:
+        ('e' | 'E') ('+' | '-')? DIGIT+
+    ;
+HEX_NUMBER:
+        '0x' HEX_DIGIT+
+    |   '0X' HEX_DIGIT+
+    ;
+HEX_DIGIT:
+        'a'..'f'
+    |   'A'..'F'
+    |   DIGIT
+    ;
+
+/// Booleans
+booleanLiteral:
+        true
+    |   false
+    ;
+
+/// Strings
+stringLiteral:
+        (multilineString | singleLineString)+
+    ;
+singleLineString:
+        '"' stringContentDQ* '"'
+    |   '\'' stringContentSQ* '\''
+    |   'r' '\'' (~( '\'' | NEWLINE ))* '\''
+    |   'r' '"'  (~( '"'  | NEWLINE ))* '"'
+    ;
+multilineString:
+        '"""'  stringContentTDQ* '"""'
+    |   "'''" stringContentTSQ* "'''"
+    |   ‘r’ '"""'  (~("""))* '"""'
+    |   ‘r’ ''''' (~('''))* '''''
+    ;
+ESCAPE_SEQUENCE:
+        '\n'
+    |   '\r'
+    |   '\f'
+    |   '\b'
+    |   '\t'
+    |   '\v'
+    |   '\x' HEX_DIGIT HEX_DIGIT
+    |   '\u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    |   '\u{' HEX_DIGIT_SEQUENCE '}'
+    ;
+HEX_DIGIT_SEQUENCE:
+        HEX_DIGIT HEX_DIGIT? HEX_DIGIT? HEX_DIGIT? HEX_DIGIT? HEX_DIGIT?
+    ;
+
+stringContentDQ:
+        ~( '\' | '"' | '$' | NEWLINE )
+    |   '\' ~( NEWLINE )
+    |   stringInterpolation
+    ;
+stringContentSQ:
+        ~( '\' | '\'' | '$' | NEWLINE )
+    |   '\' ~( NEWLINE )
+    |   stringInterpolation
+    ;
+stringContentTDQ:
+        ~( '\' | '"' | '$' )
+    |   stringInterpolation
+    ;
+stringContentTSQ:
+        ~( '\' | '\'' | '$' )
+    |   stringInterpolation
+    ;
+
+NEWLINE:
+        \n
+    |   \r
+    ;
+
+stringInterpolation:
+        '$' IDENTIFIER_NO_DOLLAR
+    |   '$' '{' expression '}'
+    ;
+
+/// Symbols
+symbolLiteral:
+        '#' (operator | (identifier (‘.’ identifier)*))   
+    ;
+
+/// Lists
+listLiteral:
+        const? typeArguments? '[' (expressionList ','?)? ']'
+    ;
+
+/// Maps
+mapLiteral:
+        const? typeArguments? '{' (mapLiteralEntry (',' mapLiteralEntry)* ','?)? '}'
+    ;
+
+mapLiteralEntry:
+        expression ':' expression
+    ;
+
+/// Throw
+throwExpression:
+        throw expression
+    ;
+throwExpressionWithoutCascade:
+        throw expressionWithoutCascade 
+    ;
+
+/// Function Expressions
+functionExpression:
+        formalParameterList functionExpressionBody
+    ;
+functionExpressionBody:
+        '=>' expression
+    |   block
+    ;
+
+/// This
+thisExpression:
+        this
+    ;
+
+/// New
+newExpression:
+        new type ('.' identifier)? arguments
+    ;
+
+/// Const
+constObjectExpression:
+        const type ('.' identifier)? arguments
+    ;
+
+/// Actual Argument List Evaluation
+arguments:
+        '(' argumentList? ')'
+    ;
+
+argumentList:
+        namedArgument (',' namedArgument)*
+    |   expressionList (',' namedArgument)*
+    ;
+
+namedArgument:
+        label expression
+    ;
+
+/// Cascaded Invocations
+cascadeSection:
+        '..'  (cascadeSelector arguments*)(assignableSelector arguments*)* (assignmentOperator expressionWithoutCascade)?
+    ;
+cascadeSelector:
+        '[' expression ']'
+    |   identifier
+    ;
+
+/// Assignment
+assignmentOperator:
+        '='
+    |   compoundAssignmentOperator
+    ;
+
+compoundAssignmentOperator:
+        '*='
+    |   '/='
+    |   '~/='
+    |   '%='
+    |   '+='
+    |   '-='
+    |   '<<='
+    |   '>>='
+    |   '&='
+    |   '^='
+    |   '|='
+    ;
+
+/// Conditional
+conditionalExpression:
+        logicalOrExpression ('?' expressionWithoutCascade ':' expressionWithoutCascade)?
+    ;
+
+/// Logical Boolean Expressions
+logicalOrExpression:
+        logicalAndExpression ('||' logicalAndExpression)*
+    ;
+
+logicalAndExpression:
+        equalityExpression ('&&' equalityExpression)*
+    ;
+
+/// Equality
+equalityExpression:
+        relationalExpression (equalityOperator relationalExpression)?
+    |   super equalityOperator relationalExpression
+    ;
+equalityOperator:
+        '=='
+    |   '!='
+    ;
+
+
+/// Relational Expressions
+relationalExpression:
+        bitwiseOrExpression (typeTest | typeCast | relationalOperator bitwiseOrExpression)?
+    |   super relationalOperator bitwiseOrExpression
+    ;
+
+relationalOperator:
+        '>='
+    |   '>'
+    |   '<='
+    |   '<'
+    ;
+
+/// Bitwise Expressions
+bitwiseOrExpression:
+        bitwiseXorExpression ('|' bitwiseXorExpression)*
+    |   super ('|' bitwiseXorExpression)+
+    ;
+
+bitwiseXorExpression:
+        bitwiseAndExpression ('^' bitwiseAndExpression)*
+    |   super ('^' bitwiseAndExpression)+
+    ;
+
+bitwiseAndExpression:
+        shiftExpression ('&' shiftExpression)*
+    |   super ('&' shiftExpression)+
+    ;
+bitwiseOperator:
+        '&'
+    |   '^'
+    |   '|'
+    ;
+
+/// Shift
+shiftExpression:
+        additiveExpression (shiftOperator additiveExpression)*
+    |   super (shiftOperator additiveExpression)+
+    ;
+shiftOperator:
+        '<<'
+    |   '>>' 
+    ;
+
+/// Additive Expressions
+additiveExpression:
+        multiplicativeExpression (additiveOperator multiplicativeExpression)*
+    |   super (additiveOperator multiplicativeExpression)+
+    ;
+additiveOperator:
+        '+'
+    |   '-'
+    ;
+
+/// Multiplicative Expressions
+multiplicativeExpression:
+        unaryExpression (multiplicativeOperator unaryExpression)*
+    |   super (multiplicativeOperator unaryExpression)+
+    ;
+multiplicativeOperator:
+        '*'
+    |   '/'
+    |   '%'
+    |   '~/'
+    ;
+
+/// Unary Expressions
+unaryExpression:
+        prefixOperator unaryExpression
+    |   postfixExpression
+    |   prefixOperator super
+    |    incrementOperator assignableExpression
+    ;
+prefixOperator:
+        '-'
+    |   unaryOperator
+    ;
+unaryOperator:
+        '!'
+    |   '~'
+    ;
+
+/// Postfix Expressions
+postfixExpression:
+        assignableExpression postfixOperator
+    |   primary selector*
+    ;
+postfixOperator:
+        incrementOperator
+    ;
+
+
+selector:
+        assignableSelector
+    |   arguments
+    ;
+
+incrementOperator:
+        '++'
+    |   '--'
+    ;
+
+/// Assignable Expressions
+assignableExpression:
+        primary (arguments* assignableSelector)+
+    |   super assignableSelector
+    |   identifier
+    ;
+assignableSelector:
+        '[' expression ']'
+    |   '.' identifier
+    ;
+
+/// Identifier Reference
+identifier:
+        IDENTIFIER
+    ;
+IDENTIFIER_NO_DOLLAR:
+        IDENTIFIER_START_NO_DOLLAR IDENTIFIER_PART_NO_DOLLAR*
+    ;
+
+IDENTIFIER:
+        IDENTIFIER_START IDENTIFIER_PART*
+    ;
+BUILT_IN_IDENTIFIER:
+        abstract
+    |   as
+    |   dynamic
+    |   export
+    |   external
+    |   factory
+    |   get
+    |   implements
+    |   import
+    |   library
+    |   operator
+    |   part
+    |   set
+    |   static
+    |   typedef
+    ;
+
+IDENTIFIER_START:
+        IDENTIFIER_START_NO_DOLLAR
+    |   '$'
+    ;
+
+IDENTIFIER_START_NO_DOLLAR:
+        LETTER
+    |   '_'
+    ;
+
+IDENTIFIER_PART_NO_DOLLAR:
+        IDENTIFIER_START_NO_DOLLAR
+    |   DIGIT
+    ;
+
+IDENTIFIER_PART:
+        IDENTIFIER_START
+    |   DIGIT
+    ;
+
+qualified:
+        identifier ('.' identifier)?
+    ;
+
+/// Type Test
+typeTest:
+        isOperator type
+    ;
+isOperator:
+        is '!'?
+    ;
+
+/// Type Cast
+typeCast:
+        asOperator type
+    ;
+asOperator:
+        as
+    ;
+
+/// Statements
+statements:
+        statement*
+    ;
+statement:
+        label* nonLabelledStatement
+    ;
+
+nonLabelledStatement:
+        block
+    |   localVariableDeclaration ';'
+    |   forStatement
+    |   whileStatement
+    |   doStatement
+    |   switchStatement
+    |   ifStatement
+    |   rethrowStatement
+    |   tryStatement
+    |   breakStatement
+    |   continueStatement
+    |   returnStatement
+    |   expressionStatement
+    |   assertStatement
+    |   localFunctionDeclaration
+    ;
+
+/// Expression Statements
+expressionStatement:
+        expression? ';'
+    ;
+
+/// Local Variable Declaration
+localVariableDeclaration:
+        initializedVariableDeclaration ';'
+    ;
+
+/// Local Function Declaration
+localFunctionDeclaration:
+        functionSignature functionBody
+    ;
+ifStatement:
+        if '(' expression ')' statement (else statement)?
+    ;
+forStatement:
+        for '(' forLoopParts ')' statement
+    ;
+
+forLoopParts:
+        forInitializerStatement expression? ';' expressionList?
+    |   declaredIdentifier in expression
+    |   identifier in expression
+    ;
+
+forInitializerStatement:
+        localVariableDeclaration ';'
+    |   expression? ';'
+    ;
+
+
+/// For Loop
+/// For-in
+
+/// While
+whileStatement:
+        while '(' expression ')' statement
+    ;
+
+/// Do
+doStatement:
+        do statement while '(' expression ')' ';'
+    ;
+/// Switch
+switchStatement:
+        switch '(' expression ')' '{' switchCase* defaultCase? '}'
+    ;
+switchCase:
+        label* (case expression ':') statements
+    ;
+
+defaultCase:
+        label* default ':' statements
+    ;
+
+/// Rethrow
+rethrowStatement:
+        rethrow
+    ;
+
+/// Try
+tryStatement:
+        try block (onPart+ finallyPart? | finallyPart)
+    ;
+onPart:
+        catchPart block
+    |   on type catchPart? block
+    ;
+
+catchPart:
+        catch '(' identifier (',' identifier)? ')'
+    ;
+
+finallyPart:
+        finally block
+    ;
+
+/// Return
+returnStatement:
+        return expression? ';'
+    ;
+
+/// Label
+label:
+        identifier ':'
+    ;
+
+/// Break
+breakStatement:
+        break identifier? ';'
+    ;
+
+/// Continue
+continueStatement:
+        continue identifier? ';'
+    ;
+
+/// Assert
+assertStatement:
+        assert '(' conditionalExpression ')' ';'
+    ;
+
+/// Libraries and Scripts
+topLevelDefinition:
+        classDefinition
+    |   typeAlias
+    |   external functionSignature ';'
+    |   external getterSignature ';'
+    |   external setterSignature ';'
+    |   functionSignature functionBody
+    |   returnType? getOrSet identifier formalParameterList functionBody
+    |   (final | const) type? staticFinalDeclarationList ';'
+    |   variableDeclaration ';'
+    ;
+getOrSet:
+        get
+    |   set
+    ;
+
+libraryDefinition:
+        libraryName? importOrExport* partDirective*  topLevelDefinition*
+    ;
+scriptTag:
+        “#!” (~NEWLINE)* NEWLINE
+    ;
+libraryName:
+        metadata library identifier (“.” identifier)* “;”   ;
+importOrExport:
+        libraryImport
+    |   libraryExport
+    ;
+
+/// Imports
+libraryImport:
+        metadata import  uri (as identifier)? combinator* “;”
+    ;
+combinator:
+        show identifierList
+    |   hide identifierList
+    ;
+identifierList:
+        identifier (, identifier)*
+    ;
+/// Exports
+libraryExport:
+        metadata export  uri combinator* “;”
+
+/// Parts
+partDirective:
+        metadata part  stringLiteral “;”
+    ;
+partHeader:
+        metadata part of identifier ( “.” identifier)* “;”
+    ;
+partDeclaration:
+        partHeader  topLevelDefinition* EOF
+    ;
+
+/// URIs
+uri:
+        stringLiteral
+    ;
+
+/// Static Types
+type:
+        typeName typeArguments?
+    ;
+typeName:
+        qualified
+    ;
+typeArguments:
+        '<' typeList '>'
+    ;
+
+typeList:
+        type (',' type)*
+    ;
+
+/// Typedef
+typeAlias:
+        metadata typedef typeAliasBody
+    ;
+typeAliasBody:
+        functionTypeAlias
+    ;
+
+functionTypeAlias:
+        functionPrefix typeParameters? formalParameterList ';'
+    ;
+
+functionPrefix:
+        returnType? identifier
+    ;
+
+/// Lexical Rules
+LETTER:
+        'a'..'z'
+    |   'A'..'Z'
+    ;
+
+DIGIT:
+        '0'..'9'
+    ;
+
+WHITESPACE:
+        ('\t' | ' ' | NEWLINE)+
+    ;
+
+/// Comments
+SINGLE_LINE_COMMENT:
+        '//' ~(NEWLINE)* (NEWLINE)?
+    ;
+
+MULTI_LINE_COMMENT:
+        '/*' (MULTI_LINE_COMMENT | ~ '*/')* '*/'
+    ;
+
+/// Reserved keywords
+/// assert, break, case, catch, class, const, continue, default, do, else, enum,
+/// extends, false, final, finally, for, if, in, is, new, null, rethrow, return,
+/// super, switch, this, throw, true, try, var, void, while, with.

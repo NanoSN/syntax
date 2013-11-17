@@ -1,6 +1,7 @@
 import 'package:parse/lexer.dart';
 
 class ReservedWord extends Token {}
+class BuiltInIdentifier extends Token {}
 class WhiteSpace extends Token {}
 class SingleLineComment extends Token {}
 class MultiLineComment extends Token {MultiLineComment(v,p):super(v,p);}
@@ -8,11 +9,16 @@ class MultiLineComment extends Token {MultiLineComment(v,p):super(v,p);}
 class Identifier extends Token {}
 class Number extends Token {}
 
-var keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
+List<String> keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
                 'continue', 'default', 'do', 'else', 'enum', 'extends',
                 'false', 'finally', 'final', 'for', 'if', 'in', 'is', 'new',
                 'null', 'rethrow', 'return', 'super', 'switch', 'this', 'throw',
                 'true', 'try', 'var', 'void', 'while', 'with'];
+
+List<String> builtInIdentifiers = [
+    'abstract', 'as', 'dynamic', 'export', 'external ', 'factory', 'get',
+    'implements', 'import', 'library', 'operator', 'part', 'set', 'static',
+    'typedef'];
 
 
 Language IDENTIFIER = and([ IDENTIFIER_START, zeroOrMore(IDENTIFIER_PART) ]);
@@ -25,15 +31,15 @@ Language IDENTIFIER_NO_DOLLAR = and( [ IDENTIFIER_START_NO_DOLLAR,
                                       zeroOrMore(IDENTIFIER_PART_NO_DOLLAR) ]);
 
 
-Language EXPONENT =  and([ or([ 'e', 'E' ]),  optional(or([ '+', '-' ])),
-                          oneOrMore(DIGIT)]);
-
 /**
 NUMBER:
      DIGIT+ ('.' DIGIT+)? EXPONENT?
    |  '.' DIGIT+ EXPONENT?
    ;
 */
+Language EXPONENT =  and([ or([ 'e', 'E' ]),  optional(or([ '+', '-' ])),
+                          oneOrMore(DIGIT)]);
+
 Language NUMBER = or([ and([ oneOrMore(DIGIT),
                              optional( and([ '.', oneOrMore(DIGIT) ]) ),
                              optional(EXPONENT) ]),
@@ -49,12 +55,32 @@ Language HEX_NUMBER = or([ and([ '0x', oneOrMore(HEX_DIGIT) ]),
                            and([ '0X', oneOrMore(HEX_DIGIT) ]) ]);
 
 
+
+/**
+ESCAPE_SEQUENCE:
+     ‘\n’
+   | ‘\r’
+   | ‘\f’
+   | ‘\b’
+   | ‘\t’
+   | ‘\v’
+   | “\x’ HEX_DIGIT HEX_DIGIT
+   | ‘\u’ HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+   | ‘\u{‘ HEX_DIGIT_SEQUENCE ‘}’
+*/
+
+
 class Main extends State {
   Main(){
 
     // Keywords.
     for(final keyword in keywords){
       this / keyword / () => new ReservedWord();
+    }
+
+    // Built in identifier
+    for(final id in builtInIdentifiers){
+      this / id / () => new BuiltInIdentifier();
     }
 
     this / IDENTIFIER / () => new Identifier();
@@ -93,6 +119,11 @@ class Comments extends State {
       }
     };
   }
+}
+
+/// State when we are in Strings
+class Strings extends State {
+
 }
 
 class DartLexer extends Lexer {
