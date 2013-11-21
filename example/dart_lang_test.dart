@@ -376,6 +376,30 @@ main(){
         });
       });
     });
+    group('Strings', (){
+      test("single qoute.", (){
+        var input = "'single qoute'";
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          print(tokens);
+          expect(tokens.length, equals(2));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[1] is StringEnd, isTrue);
+        });
+      });
+      solo_test("\$ Interpolation.", (){
+        var input = "'single \$qoute'";
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          print(tokens);
+          expect(tokens.length, equals(2));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[1] is StringEnd, isTrue);
+        });
+      });
+    });
   });
 }
 

@@ -52,6 +52,12 @@ class State {
       stateLike = matchables.first.action(this, context);
     else throw rules;
     if(stateLike is State) return stateLike;
+
+    // TODO: Should we respect #on? so sub states can reset and continue
+    // push.. pop.. top.. stack behaviour.
+    // 'push' every time we switch from state to another
+    // 'pop' only when we see EndState() / or a better name
+    // 'top' as long as we don't see a push or a pop
     return context.initialState;
   }
 
@@ -80,8 +86,9 @@ class Lexer extends TokenStream implements Context {
   State initialState;
   State currentState;
   State lastMatchingState;
+  List<State> stack = <State>[];
 
-  //TODO
+  //TODO: make position actually work.
   int position = 0;
 
   final debug = new Debug();
@@ -143,15 +150,38 @@ class Lexer extends TokenStream implements Context {
 
   void _onDone(){
     if(lastMatchingState != null) lastMatchingState.dispatch(this);
+    if(currentState.hasExactMatch) {
+      print('asfddfsafasd');
+      currentState.dispatch(this);
+    }
     outputStream.close();
   }
 
   /// Public methods
-  emit(token){
+  emit(token, state){
     outputStream.add(token);
     //currentState = initialState;
-    //position+= matchStr.length;
-    //matchStr = '';
+    position+= state.matchedInput.length;
+    state.matchedInput = '';
+  }
+
+  /// Stack operations
+
+  /// Adds [State] to [stack] and returns the pushed [State].
+  State push(State state){
+    stack.add(state);
+    return state;
+  }
+
+  /// Removes the top of the [stack] and returns it.
+  State pop(){
+    if(stack.isEmpty) return initialState;
+    return stack.removeLast();
+  }
+
+  /// Returns the top of the stack without removing it.
+  State top(){
+    return stack.last;
   }
 }
 

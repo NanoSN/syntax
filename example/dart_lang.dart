@@ -14,6 +14,11 @@ class Identifier extends Token {}
 class Number extends Token {}
 class EscapeSequence extends Token {}
 
+class StringStart extends Token {StringStart(v,p):super(v,p);}
+class StringPart extends Token {StringPart(v,p):super(v,p);}
+class StringEnd extends Token {StringEnd(v,p):super(v,p);}
+class StringInterpolation extends Token {StringInterpolation([v,p]):super(v,p);}
+
 List<String> keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
                 'continue', 'default', 'do', 'else', 'enum', 'extends',
                 'false', 'finally', 'final', 'for', 'if', 'in', 'is', 'new',
@@ -118,8 +123,10 @@ class Main extends State {
         () => new SingleLineComment();
 
     // Multi line comments
-    on('/*') <= () => new Comments();
+    on('/*') << () => new Comments();
 
+    // Strings .. let the fun begin
+    on("'") << () => new SingleQouteString();
 
   }
 }
@@ -135,8 +142,8 @@ class Comments extends State {
     on( not('*/') ) <= this;
     on( '*/' )      <= (State state, Lexer _) {
       if(internalState == 0) {
-        _.emit(new MultiLineComment(state.matchedInput,_.position));
-        return new Main();
+        _.emit(new MultiLineComment(state.matchedInput,_.position), state);
+        return _.pop();
       } else {
         internalState--;
         return this;
@@ -147,9 +154,61 @@ class Comments extends State {
 
 /// State when we are in Strings
 class Strings extends State {
-
 }
 
+/**
+string = 'foo $bar bla'
+tokens = StringOpen('foo ) Token($) Identifier(bar) StringClose( bla')
+
+string = 'foo $bar $bla'
+tokens = StringOpen('foo ) Token($) Identifier(bar) StringPart( ) Token($)
+         Identifier(bla) StringClose(')
+
+string = 'foo ${foo.bar} bla'
+tokens = StringOpen('foo ) Token(${) ID(foo) Token(.) ID(bar) Token(})
+         StringClose( bla')
+*/
+class SingleQouteString extends Strings {
+  SingleQouteString(){
+
+    on("'") <= (State state, Lexer _) {
+        _.emit(new StringEnd(state.matchedInput,_.position), state);
+        return _.pop();
+    };
+
+    //this / not( or([ '\\', "'", '\$', NEWLINE ])) /
+    on( zeroOrMore(not(or([ '\\', "'", '\$', NEWLINE ])))) <=
+        (State state, Lexer _) {
+          if(matchedInput.startsWith("'")) {
+            _.emit(new StringStart(state.matchedInput,_.position), state);
+          } else {
+            _.emit(new StringPart(state.matchedInput,_.position), state);
+          }
+          return this;
+        };
+
+    // Escape Sequences
+    for(final seq in escapeSequences){
+      this / seq / () => new EscapeSequence();
+    }
+
+    this / rx([ '\\', not(NEWLINE) ]) / () => new EscapeSequence();
+    this / rx([ '\$', IDENTIFIER_NO_DOLLAR ]) / () => new StringInterpolation();
+    on('\${') << () => new StringInterpolationState();
+
+  }
+}
+
+class StringInterpolationState extends State {
+  StringInterpolationState(){
+    on( '{' )       <= () => new StringInterpolationState();
+    this / ( zeroOrMore(not('}')) ) / () => new StringInterpolation();
+    on( '}' )      <= (State state, Lexer _) {
+        _.emit(new StringInterpolation(state.matchedInput,_.position), state);
+        return _.pop();
+    };
+  }
+}
 class DartLexer extends Lexer {
   DartLexer(stream): super(stream, new Main());
 }
