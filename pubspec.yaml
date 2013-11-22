@@ -1,8 +1,8 @@
-name: parse
-description: simple general purpose parser library
+name: syntax
+description: simple general purpose syntax library
 author: "Sam Elkhateeb <same@nanosn.com>"
 homepage: https://github.com/
-description:  An easy to use event bus library in Dart.
+description:  TODO
 version: 0.0.1
 
 dependencies:

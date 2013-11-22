@@ -1,4 +1,4 @@
-import 'package:parse/lexer.dart';
+import 'package:syntax/lexer.dart';
 
 class ReservedWord extends Token {}
 class BuiltInIdentifier extends Token {}
