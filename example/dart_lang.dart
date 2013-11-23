@@ -18,6 +18,46 @@ class StringStart extends Token {StringStart(v,p):super(v,p);}
 class StringPart extends Token {StringPart(v,p):super(v,p);}
 class StringEnd extends Token {StringEnd(v,p):super(v,p);}
 class StringInterpolation extends Token {StringInterpolation([v,p]):super(v,p);}
+class StringInterpolationStart extends Token {
+  StringInterpolationStart([v,p]):super(v,p);
+}
+class StringInterpolationEnd extends Token {
+  StringInterpolationEnd([v,p]):super(v,p);
+}
+
+class Comma extends Token {}    // ,
+class Colon extends Token {}    // :
+class SemiColon extends Token {} // ;
+class Period extends Token {}    // .
+class Tilde extends Token {}     // ~
+class At extends Token {}        // @
+class Pound extends Token {}     // #
+class QuestionMark extends Token {}    // ?
+class ExclamationMark extends Token {} // !
+
+/// Block family tokens
+class BlockStart extends Token {BlockStart(v,p):super(v,p);}
+class BlockEnd extends Token {BlockEnd(v,p):super(v,p);}
+// class OpenParen extends BlockStart {} // (
+// class CloseParen extends BlockEnd {}  // )
+// class OpenSquare extends BlockStart {} // [
+// class CloseSquare extends BlockEnd {}  // ]
+// class OpenCurly extends BlockStart {}  // {
+// class CloseCurly extends BlockEnd {}   // }
+
+abstract class Operator extends Token {}
+class EqualOperator extends Operator {} // =
+class GraterThan extends Operator {}    // >
+class LessThan extends Operator {}      // <
+class Asterisk extends Operator {}      // *
+class Slash extends Operator {}         // /
+class BackSlash extends Operator {}     // \
+class Plus extends Operator {}          // +
+class Minus extends Operator {}         // -
+class Ampersand extends Operator {}     // &
+class Caret extends Operator {}         // ^
+class VerticalBar extends Operator {}   // |
+class Percent extends Operator {}       // %
 
 List<String> keywords = ['assert', 'break', 'case', 'catch', 'class', 'const',
                 'continue', 'default', 'do', 'else', 'enum', 'extends',
@@ -97,16 +137,15 @@ class Main extends State {
 
     // Keywords.
     for(final keyword in keywords){
-      this / keyword / () => new ReservedWord();
+      this / keyword                   / () => new ReservedWord();
     }
 
     // Built in identifier
     for(final id in builtInIdentifiers){
-      this / id / () => new BuiltInIdentifier();
+      this / id                       / () => new BuiltInIdentifier();
     }
 
-    this / IDENTIFIER / () => new Identifier();
-
+    this / IDENTIFIER                 / () => new Identifier();
     this / or([ NUMBER, HEX_NUMBER ]) / () => new Number();
 
     // Escape Sequences
@@ -116,17 +155,63 @@ class Main extends State {
 
     // Spaces.
     this / oneOrMore(or([ '\t', ' ' ])) / () => new WhiteSpace();
-    this / NEWLINE / () => new NewLine();
+    this / NEWLINE                      / () => new NewLine();
 
     // Single line comments
     this / rx(['//', zeroOrMore(not(NEWLINE)), zeroOrOne(NEWLINE)]) /
         () => new SingleLineComment();
 
+
+    this / rx([',']) / () => new Comma();
+    this / rx([':']) / () => new Colon();
+    this / rx([';']) / () => new SemiColon();
+    this / rx(['.']) / () => new Period();
+    this / rx(['~']) / () => new Tilde();
+    this / rx(['@']) / () => new At();
+    this / rx(['#']) / () => new Pound();
+    this / rx(['?']) / () => new QuestionMark();
+
+    /// Brackets
+    State blockStart(State state, Lexer _) {
+      _.emit(new BlockStart(state.matchedInput, _.position), state);
+      return _.push(this);
+    };
+    State blockEnd(State state, Lexer _) {
+      _.emit(new BlockEnd(state.matchedInput, _.position), state);
+      return _.pop();
+    };
+    on(or([ '(', '[', '{' ])) (blockStart);
+    on(or([ ')', ']', '}' ])) (blockEnd);
+
+    /// Operators
+    // TODO: should '==' be a separate token?
+    this / rx(['='])  / () => new EqualOperator();
+    this / rx(['>'])  / () => new GraterThan();
+    this / rx(['<'])  / () => new LessThan();
+    this / rx(['*'])  / () => new Asterisk();
+    this / rx(['/'])  / () => new Slash();
+    this / rx(['\\']) / () => new BackSlash();
+    this / rx(['+'])  / () => new Plus();
+    this / rx(['-'])  / () => new Minus();
+    this / rx(['&'])  / () => new Ampersand();
+    this / rx(['^'])  / () => new Caret();
+    this / rx(['|'])  / () => new VerticalBar();
+    this / rx(['%'])  / () => new Percent();
+    this / rx(['!'])  / () => new ExclamationMark();
+
     // Multi line comments
     on('/*') << () => new Comments();
 
     // Strings .. let the fun begin
-    on("'") << () => new SingleQouteString();
+    on("'''")  << () => new TripleSingleQouteString();
+    on('"""')  << () => new TripleDoubleQouteString();
+    on("r'''") << () => new RawTripleSingleQouteString();
+    on('r"""') << () => new RawTripleDoubleQouteString();
+
+    on("'")  << () => new SingleQouteString();
+    on('"')  << () => new DoubleQouteString();
+    on("r'") << () => new RawSingleQouteString();
+    on('r"') << () => new RawDoubleQouteString();
 
   }
 }
@@ -153,62 +238,68 @@ class Comments extends State {
 }
 
 /// State when we are in Strings
-class Strings extends State {
-}
-
-/**
-string = 'foo $bar bla'
-tokens = StringOpen('foo ) Token($) Identifier(bar) StringClose( bla')
-
-string = 'foo $bar $bla'
-tokens = StringOpen('foo ) Token($) Identifier(bar) StringPart( ) Token($)
-         Identifier(bla) StringClose(')
-
-string = 'foo ${foo.bar} bla'
-tokens = StringOpen('foo ) Token(${) ID(foo) Token(.) ID(bar) Token(})
-         StringClose( bla')
-*/
-class SingleQouteString extends Strings {
-  SingleQouteString(){
-
-    on("'") <= (State state, Lexer _) {
+abstract class Strings extends State {
+  Strings(String start, String end, {isRaw:false, isMultiline:false}){
+    on(end) ( (State state, Lexer _) {
+        print(">>>>>>>>>>>>>>>>>>>>>> Look here <<<<<<<<<<<<<<<<<<<<<");
         _.emit(new StringEnd(state.matchedInput,_.position), state);
         return _.pop();
-    };
+    });
 
-    //this / not( or([ '\\', "'", '\$', NEWLINE ])) /
-    on( zeroOrMore(not(or([ '\\', "'", '\$', NEWLINE ])))) <=
-        (State state, Lexer _) {
-          if(matchedInput.startsWith("'")) {
-            _.emit(new StringStart(state.matchedInput,_.position), state);
-          } else {
-            _.emit(new StringPart(state.matchedInput,_.position), state);
-          }
-          return this;
-        };
+    var escapes = [end];
+    if(!isRaw) escapes.addAll(['\\', '\$']);
+    if(!isMultiline) escapes.add(NEWLINE);
 
-    // Escape Sequences
-    for(final seq in escapeSequences){
-      this / seq / () => new EscapeSequence();
+    on( zeroOrMore(not(or( escapes ))) ) <=
+      (State state, Lexer _) {
+        if(matchedInput.startsWith(start)) {
+          _.emit(new StringStart(state.matchedInput,_.position), state);
+        } else {
+          _.emit(new StringPart(state.matchedInput,_.position), state);
+        }
+        return this;
+      };
+
+    if(!isRaw) {
+      this / rx([ '\\', not(NEWLINE) ]) / () => new EscapeSequence();
+      this / rx([ '\$', IDENTIFIER_NO_DOLLAR ]) / () => new StringInterpolation();
+      on('\${') ((State state, Lexer _) {
+        _.emit(new StringInterpolationStart(state.matchedInput, _.position),
+        state);
+        return _.push(new Main());
+      });
     }
-
-    this / rx([ '\\', not(NEWLINE) ]) / () => new EscapeSequence();
-    this / rx([ '\$', IDENTIFIER_NO_DOLLAR ]) / () => new StringInterpolation();
-    on('\${') << () => new StringInterpolationState();
-
   }
 }
 
-class StringInterpolationState extends State {
-  StringInterpolationState(){
-    on( '{' )       <= () => new StringInterpolationState();
-    this / ( zeroOrMore(not('}')) ) / () => new StringInterpolation();
-    on( '}' )      <= (State state, Lexer _) {
-        _.emit(new StringInterpolation(state.matchedInput,_.position), state);
-        return _.pop();
-    };
-  }
+class SingleQouteString extends Strings {
+  SingleQouteString(): super("'", "'");
 }
+class DoubleQouteString extends Strings {
+  DoubleQouteString(): super('"', '"');
+}
+class RawSingleQouteString extends Strings {
+  RawSingleQouteString(): super("r'", "'", isRaw:true);
+}
+class RawDoubleQouteString extends Strings {
+  RawDoubleQouteString(): super('r"', '"', isRaw:true);
+}
+
+class TripleSingleQouteString extends Strings {
+  TripleSingleQouteString(): super("'''", "'''", isMultiline:true);
+}
+class TripleDoubleQouteString extends Strings {
+  TripleDoubleQouteString(): super('"""', '"""', isMultiline:true);
+}
+class RawTripleSingleQouteString extends Strings {
+  RawTripleSingleQouteString(): super("r'''", "'''", isRaw:true,
+                                      isMultiline:true);
+}
+class RawTripleDoubleQouteString extends Strings {
+  RawTripleDoubleQouteString(): super('r"""', '"""', isRaw:true,
+                                      isMultiline:true);
+}
+
 class DartLexer extends Lexer {
   DartLexer(stream): super(stream, new Main());
 }

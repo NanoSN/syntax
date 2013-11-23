@@ -50,15 +50,20 @@ class State {
       stateLike = exactMatch.first.action(this, context);
     else if(!matchables.isEmpty)
       stateLike = matchables.first.action(this, context);
-    else throw rules;
+    else throw "Something not right here .. should have state,"
+               "or state creator function $rules, Matching: $matchedInput";
     if(stateLike is State) return stateLike;
 
+    // At this point the matchedInput has been taken care of so we will
+    // just reset it.
+    context.top().matchedInput = '';
+    return context.top();
     // TODO: Should we respect #on? so sub states can reset and continue
     // push.. pop.. top.. stack behaviour.
     // 'push' every time we switch from state to another
     // 'pop' only when we see EndState() / or a better name
     // 'top' as long as we don't see a push or a pop
-    return context.initialState;
+    //return context.initialState;
   }
 
   _RuleBuilder on(dynamic language){
@@ -69,7 +74,8 @@ class State {
 
   ///Syntactic sugar
   operator / (dynamic language) => on(language);
-  toString() => '$runtimeType: $rules, Matched: "$matchedInput"';
+  toString() =>
+    '$runtimeType: ${rules.join('\n')},\n Matched: \'$matchedInput\'';
 }
 
 class RejectState extends State {
@@ -79,8 +85,8 @@ class RejectState extends State {
 
 class Context {
   State initialState;
+  List<State> stack;
 }
-
 class Lexer extends TokenStream implements Context {
   State INIT = new State();
   State initialState;
@@ -100,11 +106,16 @@ class Lexer extends TokenStream implements Context {
   void _onData(String ch){
     try{
       currentState = this.next(ch);
-    } on NoMatch catch(e){
+    } catch (e){
       _subscription.cancel();
       outputStream.addError(e);
+      outputStream.addError("Error while lexing at position: $position");
+      outputStream.addError("Current stack: " + stack.map((_) => _.runtimeType)
+        .join(','));
+      outputStream.addError("Stack top:${stack.last}");
     }
   }
+
 
   State next(ch){
     currentState = currentState.next(ch, this);
@@ -121,21 +132,19 @@ class Lexer extends TokenStream implements Context {
 
       if(lastMatchingState != null){
         remainingInput = getRemainingInput(ch);
-        // print("currentInput: '${currentState.matchedInput}'");
-        // print("LastMatchInput: '${lastMatchingState.matchedInput}'");
-        // print("Remaining:    '$remainingInput'");
+
+        print("currentInput: '${currentState.matchedInput}'");
+        print("LastMatchInput: '${lastMatchingState.matchedInput}'");
+        print("Remaining:    '$remainingInput'");
+        print("canMatchMore:    '${lastMatchingState.canMatchMore}'");
+
         currentState = lastMatchingState.dispatch(this);
         lastMatchingState = null;
 
-        // print("|$ch|----- CurrentState Before Recursion: ------");
-        // print(currentState);
-        // print("----- END  ------\n\n");
 
         // Recurse over all characters we missed.
         for(final c in remainingInput.split('')){
-          // print("'$c'");
           currentState = next(c);
-          // print(currentState);
         }
         return currentState;
       }
@@ -150,17 +159,12 @@ class Lexer extends TokenStream implements Context {
 
   void _onDone(){
     if(lastMatchingState != null) lastMatchingState.dispatch(this);
-    if(currentState.hasExactMatch) {
-      print('asfddfsafasd');
-      currentState.dispatch(this);
-    }
     outputStream.close();
   }
 
   /// Public methods
   emit(token, state){
     outputStream.add(token);
-    //currentState = initialState;
     position+= state.matchedInput.length;
     state.matchedInput = '';
   }
@@ -176,11 +180,13 @@ class Lexer extends TokenStream implements Context {
   /// Removes the top of the [stack] and returns it.
   State pop(){
     if(stack.isEmpty) return initialState;
-    return stack.removeLast();
+     stack.removeLast();
+    return top();
   }
 
   /// Returns the top of the stack without removing it.
   State top(){
+    if(stack.isEmpty) return initialState;
     return stack.last;
   }
 }

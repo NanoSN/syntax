@@ -382,21 +382,107 @@ main(){
         Future<List<Token>> match = lex(input);
         expect(match, completes);
         match.then((tokens) {
-          print(tokens);
           expect(tokens.length, equals(2));
           expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[0].value, equals("'single qoute"));
+
           expect(tokens[1] is StringEnd, isTrue);
+          expect(tokens[1].value, equals("'"));
         });
       });
-      solo_test("\$ Interpolation.", (){
+      test("\$ Interpolation.", (){
         var input = "'single \$qoute'";
         Future<List<Token>> match = lex(input);
         expect(match, completes);
         match.then((tokens) {
-          print(tokens);
-          expect(tokens.length, equals(2));
+          expect(tokens.length, equals(3));
           expect(tokens[0] is StringStart, isTrue);
-          expect(tokens[1] is StringEnd, isTrue);
+          expect(tokens[0].value, equals("'single "));
+
+          expect(tokens[1] is StringInterpolation, isTrue);
+          expect(tokens[1].value, equals("\$qoute"));
+
+          expect(tokens[2] is StringEnd, isTrue);
+          expect(tokens[2].value, equals("'"));
+        });
+      });
+      test("\${bla.bla} Interpolation.", (){
+        var input = "'single \${bla.bla} qoute'";
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(8));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[0].value, equals("'single "));
+
+          expect(tokens[1] is StringInterpolationStart, isTrue);
+          expect(tokens[1].value, equals("\${"));
+
+          expect(tokens[2] is Identifier, isTrue);
+          expect(tokens[2].value, equals("bla"));
+
+          expect(tokens[3] is Period, isTrue);
+          expect(tokens[3].value, equals("."));
+
+          expect(tokens[4] is Identifier, isTrue);
+          expect(tokens[4].value, equals("bla"));
+
+          expect(tokens[5] is BlockEnd, isTrue);
+          expect(tokens[5].value, equals("}"));
+
+          expect(tokens[6] is StringPart, isTrue);
+          expect(tokens[6].value, equals(" qoute"));
+
+          expect(tokens[7] is StringEnd, isTrue);
+          expect(tokens[7].value, equals("'"));
+        });
+
+      });
+      test("\${bla '\${bla}''} Interpolation.", (){
+        var input = "'single \${bla \${bla}} qoute'";
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(11));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[0].value, equals("'single "));
+
+          expect(tokens[1] is StringInterpolationStart, isTrue);
+          expect(tokens[1].value, equals("\${"));
+
+          expect(tokens[2] is Identifier, isTrue);
+          expect(tokens[2].value, equals("bla"));
+
+          expect(tokens[3] is WhiteSpace, isTrue);
+          expect(tokens[3].value, equals(" "));
+
+          expect(tokens[4] is Identifier, isTrue);
+          expect(tokens[4].value, equals("\$"));
+
+          expect(tokens[5] is BlockStart, isTrue);
+          expect(tokens[5].value, equals("{"));
+
+          expect(tokens[6] is Identifier, isTrue);
+          expect(tokens[6].value, equals("bla"));
+
+          expect(tokens[7] is BlockEnd, isTrue);
+          expect(tokens[7].value, equals("}"));
+
+          expect(tokens[8] is BlockEnd, isTrue);
+          expect(tokens[8].value, equals("}"));
+
+          expect(tokens[9] is StringPart, isTrue);
+          expect(tokens[9].value, equals(" qoute"));
+
+          expect(tokens[10] is StringEnd, isTrue);
+          expect(tokens[10].value, equals("'"));
+        });
+      });
+      solo_test("triple qoutes", (){
+        var input = '""" hi """';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
         });
       });
     });
@@ -416,4 +502,3 @@ Future<List<Token>> lex(String input){
                 onDone: () => _completer.complete(result));
   return _completer.future;
 }
-
