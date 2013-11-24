@@ -3,7 +3,7 @@ description: simple general purpose syntax library
 author: "Sam Elkhateeb <same@nanosn.com>"
 homepage: https://github.com/
 description:  TODO
-version: 0.0.1
+version: 0.1.0
 
 dependencies:
   logging: any
