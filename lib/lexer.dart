@@ -211,6 +211,7 @@ class Lexer extends TokenStream implements Context {
       }
     }
 
+    // TODO: should we care to emit End Of Input token?
     outputStream.close();
   }
 

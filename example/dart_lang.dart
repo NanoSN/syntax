@@ -310,3 +310,4 @@ class RawTripleDoubleQouteString extends Strings {
 class DartLexer extends Lexer {
   DartLexer(stream): super(stream, new Main());
 }
+

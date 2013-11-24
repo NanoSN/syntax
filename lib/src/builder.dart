@@ -23,7 +23,7 @@ Language or(List<dynamic> languages){
 
 Language and(List<dynamic> languages) => rx(languages);
 Language oneOrMore(dynamic language) => new And(toLanguage(language),
-                                                new Star(toLanguage(language)));
+    new Star(toLanguage(language)));
 Language zeroOrMore(dynamic language) => new Star(toLanguage(language));
 Language zeroOrOne(dynamic language) => new Optional(toLanguage(language));
 Language optional(dynamic language) => zeroOrOne(language);
@@ -58,10 +58,10 @@ Language word(String str){
   return result;
 }
 
-Language LETTER = new Letter();
-Language DIGIT = new Digit();
-Language NEWLINE = new Newline();
-Language HEX_DIGIT = new HexDigit();
+Language LETTER = const Letter();
+Language DIGIT = const Digit();
+Language NEWLINE = const Newline();
+Language HEX_DIGIT = const HexDigit();
 Language not(dynamic thing) => new Not(toLanguage(thing));
 Language notChar(String char) => new NotCharacter(char);
 

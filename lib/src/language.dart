@@ -1,12 +1,13 @@
 part of lexer;
 
-Language reject = new Reject();
-Language match = new Match();
+Language reject = const Reject();
+Language match = const Match();
 
 /// End of input special object.
-var EOI = new EndOfInput();
+var EOI = const EndOfInput();
 
 abstract class Language {
+  const Language();
   bool get isMatchable => false;
   Language derive(dynamic ch);
 }
@@ -14,6 +15,7 @@ abstract class Language {
 
 /// A [Language] that rejects everything.
 class Reject extends Language {
+  const Reject();
   Language derive(dynamic ch) => reject;
   toString() => '{}';
 }
@@ -21,6 +23,7 @@ class Reject extends Language {
 
 /// A [Language] that matches the defined [Language].
 class Match extends Language {
+  const Match();
   bool get isMatchable => true;
   Language derive(dynamic ch) => reject;
   toString() => '\'\'';
@@ -31,6 +34,7 @@ class Match extends Language {
 /// This [Language] is used as the last derivative to test wheather it is a
 /// match.
 class EndOfInput extends Language {
+  const EndOfInput();
   Language derive(dynamic ch) => reject;//(ch == EOI)? match: reject;
   toString() => '<EOI>';
 }
@@ -133,6 +137,7 @@ class Optional extends Language {
 
 /// Helper [Language] represents a letter [a..z] [A..Z].
 class Letter extends Language {
+  const Letter();
   Language derive(dynamic c) {
     if(c is! String) return reject;
     if(a_z(c) || A_Z(c))
@@ -149,6 +154,7 @@ class Letter extends Language {
 
 /// Helper [Language] represents a digit 0..9.
 class Digit extends Language {
+  const Digit();
   Language derive(dynamic c) {
     if(c is! String) return reject;
     if(digit(c))
@@ -162,6 +168,7 @@ class Digit extends Language {
 
 /// Helper [Language] represents a hex digit 0..9 A..F a..f.
 class HexDigit extends Language {
+  const HexDigit();
   Language derive(dynamic c) {
     if(c is! String) return reject;
     if(isBetween(c, '0', '9') ||
@@ -180,6 +187,7 @@ class HexDigit extends Language {
 
 /// Helper [Language] represents a newline character.
 class Newline extends Language {
+  const Newline();
   Language derive(dynamic c) {
     if(c is! String) return reject;
     if(c == '\r' || c == '\n')
