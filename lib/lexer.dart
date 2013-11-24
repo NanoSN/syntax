@@ -131,7 +131,7 @@ class Lexer extends TokenStream implements Context {
       }
 
       if(lastMatchingState != null){
-        remainingInput = getRemainingInput(ch);
+        remainingInput = getRemainingInput();
 
         print("currentInput: '${currentState.matchedInput}'");
         print("LastMatchInput: '${lastMatchingState.matchedInput}'");
@@ -153,9 +153,8 @@ class Lexer extends TokenStream implements Context {
   }
 
   var remainingInput;
-  String getRemainingInput(ch) =>
-      currentState.matchedInput.replaceFirst(lastMatchingState.matchedInput,
-                                             '');
+  String getRemainingInput() =>
+      currentState.matchedInput.replaceFirst(lastMatchingState.matchedInput,'');
 
   void _onDone(){
     if(lastMatchingState != null) lastMatchingState.dispatch(this);
