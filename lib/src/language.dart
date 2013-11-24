@@ -57,15 +57,9 @@ class Or extends Language {
   bool get isMatchable => left.isMatchable || right.isMatchable;
 
   Or._internal(this.left, this.right);
-  factory Or(left, right){
-    if (left == reject && right == reject) return reject;
-    if (left == reject) return right;
-    if (right == reject) return left;
-    if (left == match || right == match) return match;
-    return new Or._internal(left, right);
-  }
+  factory Or(left, right) => throw "Not permitted. Use makeOr instead";
   Language derive (String c) {
-    return new Or(left.derive(c), right.derive(c));
+    return makeOr(left.derive(c), right.derive(c));
   }
   toString() => '$left | $right';
 }
@@ -78,21 +72,15 @@ class And extends Language {
   bool get isMatchable => left.isMatchable && right.isMatchable;
 
   And._internal(this.left, this.right);
-
-  factory And(left, right){
-    if(left == match) return right;
-    //if(right == match) return left; // Really? does this make sense?
-    if(left == reject || right == reject) return reject;
-    return new And._internal(left, right);
-  }
+  factory And(left, right) => throw "Not permitted. Use makeAnd instead";
 
   Language derive (String c) {
 
     // TODO(Sam): It looks like we need this only for Star.. Is this true?
     if(left.isMatchable){
-      return new Or(new And(left.derive(c), right), right.derive(c));
+      return makeOr(makeAnd(left.derive(c), right), right.derive(c));
     }
-    return new And(left.derive(c), right);
+    return makeAnd(left.derive(c), right);
   }
   toString() {
     if(left is Character && right is Character)
@@ -109,12 +97,9 @@ class Star extends Language {
   bool get isMatchable => true;
 
   Star._internal(this.language);
-  factory Star(language){
-    if(language == match) return match;
-    if(language == reject) return reject;
-    return new Star._internal(language);
-  }
-  Language derive(ch) => new And(language.derive(ch), new Star(language));
+  factory Star(language) => throw "Not permitted. Use makeStar instead";
+
+  Language derive(ch) => makeAnd(language.derive(ch), makeStar(language));
   toString() => '($language)*';
 }
 
@@ -125,11 +110,8 @@ class Optional extends Language {
   bool get isMatchable => true;
 
   Optional._internal(this.language);
-  factory Optional(language){
-    if(language == match) return match;
-    if(language == reject) return reject;
-    return new Optional._internal(language);
-  }
+  factory Optional(left, right) => throw "Not permitted. Use makeOptional instead";
+
   Language derive(ch) => language.derive(ch);
   toString() => '($language)?';
 }
@@ -215,4 +197,34 @@ class Not extends Language {
     return new Not(d);
   }
   toString() => '~{$language}';
+}
+
+/// Helper factory functions.
+/// (sam): moved them out of factory constructors because checked mode
+/// complained that they don't return the same type.
+Language makeOr(Language left, Language right){
+  if (left == reject && right == reject) return reject;
+  if (left == reject) return right;
+  if (right == reject) return left;
+  if (left == match || right == match) return match;
+  return new Or._internal(left, right);
+}
+
+Language makeAnd(Language left, Language right){
+  if(left == match) return right;
+  //if(right == match) return left; // Really? does this make sense?
+  if(left == reject || right == reject) return reject;
+  return new And._internal(left, right);
+}
+
+Language makeStar(Language language){
+  if(language == match) return match;
+  if(language == reject) return reject;
+  return new Star._internal(language);
+}
+
+Language makeOptional(Language language){
+  if(language == match) return match;
+  if(language == reject) return reject;
+  return new Optional._internal(language);
 }

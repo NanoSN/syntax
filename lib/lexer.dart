@@ -37,13 +37,15 @@ class State {
   bool get hasMatchables => rules.any((_) => _.isMatchable);
   bool get isReject => rules.every((_) => _.isReject);
 
-  State next(String ch, Context context) =>
-      new DerivedState(matchedInput + ch,
-                rules.map((_) => _.derive(ch)).where((_) => !_.isReject));
+  State next(String ch, Context context) {
+    var derivedRules = new List<Rule>.from(
+        rules.map((_) => _.derive(ch)).where((_) => !_.isReject));
+    return new DerivedState( '${matchedInput}$ch', derivedRules);
+  }
 
   State dispatch(Context context){
-    List exactMatch = rules.where((_) => _.isMatch);
-    List matchables = rules.where((_) => _.isMatchable);
+    List<Rule> exactMatch = new List<Rule>.from(rules.where((_) => _.isMatch));
+    List<Rule> matchables = new List<Rule>.from(rules.where((_) => _.isMatchable));
     var stateLike;
 
     if(!exactMatch.isEmpty)
@@ -118,7 +120,8 @@ class Lexer extends TokenStream implements Context {
       outputStream.addError("Error while lexing at position: $position");
       outputStream.addError("Current stack: " + stack.map((_) => _.runtimeType)
         .join(','));
-      outputStream.addError("Stack top:${stack.last}");
+      if(!stack.isEmpty)
+        outputStream.addError("Stack top:${stack.last}");
     }
   }
 

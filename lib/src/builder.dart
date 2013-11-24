@@ -2,12 +2,11 @@
 
 part of lexer;
 
-
 /// Main entry for the builder.
 Language rx(List<dynamic> languages){
   var result = toLanguage(languages.first);
   for(int i=1; i< languages.length; i++){
-    result = new And(result, toLanguage(languages[i]));
+    result = makeAnd(result, toLanguage(languages[i]));
   }
   return result;
 }
@@ -16,23 +15,23 @@ Language rx(List<dynamic> languages){
 Language or(List<dynamic> languages){
   var result = toLanguage(languages.first);
   for(int i=1; i< languages.length; i++){
-    result = new Or(result, toLanguage(languages[i]));
+    result = makeOr(result, toLanguage(languages[i]));
   }
   return result;
 }
 
 Language and(List<dynamic> languages) => rx(languages);
-Language oneOrMore(dynamic language) => new And(toLanguage(language),
-    new Star(toLanguage(language)));
-Language zeroOrMore(dynamic language) => new Star(toLanguage(language));
-Language zeroOrOne(dynamic language) => new Optional(toLanguage(language));
+Language oneOrMore(dynamic language) => makeAnd(toLanguage(language),
+    makeStar(toLanguage(language)));
+Language zeroOrMore(dynamic language) => makeStar(toLanguage(language));
+Language zeroOrOne(dynamic language) => makeOptional(toLanguage(language));
 Language optional(dynamic language) => zeroOrOne(language);
 
 Language exactly(dynamic language, {int times:1}){
   language = toLanguage(language);
   var result = language;
   for(int i = 1; i < times; i++){
-    result = new And(result, language);
+    result = makeAnd(result, language);
   }
   return result;
 }
@@ -53,7 +52,7 @@ Language word(String str){
   if(str.length == 1) return new Character(str);
   var result = new Character(str[0]);
   for(int i=1; i< str.length; i++){
-    result = new And(result, new Character(str[i]));
+    result = makeAnd(result, new Character(str[i]));
   }
   return result;
 }
