@@ -491,6 +491,19 @@ main(){
           expect(tokens[1].value, equals('"""'));
         });
       });
+      test("empty string", (){
+        var input = '""';
+        Future<List<Token>> match = lex(input);
+        expect(match, completes);
+        match.then((tokens) {
+          expect(tokens.length, equals(2));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[0].value, equals('"'));
+
+          expect(tokens[1] is StringEnd, isTrue);
+          expect(tokens[1].value, equals('"'));
+        });
+      });
     });
   });
 }

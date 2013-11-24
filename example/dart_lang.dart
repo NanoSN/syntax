@@ -203,15 +203,16 @@ class Main extends State {
     on('/*') << () => new Comments();
 
     // Strings .. let the fun begin
+    on("'")  << () => new SingleQouteString();
+    on('"')  << () => new DoubleQouteString();
+    on("r'") << () => new RawSingleQouteString();
+    on('r"') << () => new RawDoubleQouteString();
+
     on("'''")  << () => new TripleSingleQouteString();
     on('"""')  << () => new TripleDoubleQouteString();
     on("r'''") << () => new RawTripleSingleQouteString();
     on('r"""') << () => new RawTripleDoubleQouteString();
 
-    on("'")  << () => new SingleQouteString();
-    on('"')  << () => new DoubleQouteString();
-    on("r'") << () => new RawSingleQouteString();
-    on('r"') << () => new RawDoubleQouteString();
 
   }
 }
@@ -241,7 +242,14 @@ class Comments extends State {
 abstract class Strings extends State {
   Strings(String start, String end, {isRaw:false, isMultiline:false}){
     on(end) ( (State state, Lexer _) {
-        _.emit(new StringEnd(state.matchedInput,_.position), state);
+        // Handle empty string case.
+        if(state.matchedInput == start+end ){
+          var pos = _.position;
+          _.emit(new StringStart(start, pos), state);
+          _.emit(new StringEnd(end, pos + start.length), state);
+        } else {
+          _.emit(new StringEnd(state.matchedInput,_.position), state);
+        }
         return _.pop();
     });
 

@@ -90,6 +90,7 @@ class DerivedState extends State {
 class Context {
   State initialState;
   List<State> stack;
+  State top(){}
 }
 class Lexer extends TokenStream implements Context {
   State INIT = new State();
@@ -123,10 +124,11 @@ class Lexer extends TokenStream implements Context {
 
 
   State next(ch){
-    currentState = currentState.next(ch, this);
 
+    currentState = currentState.next(ch, this);
     if(currentState.hasExactMatch){
       lastMatchingState = currentState;
+      lastDispatchableState = currentState;
       return currentState;
 
     } else {
@@ -134,7 +136,6 @@ class Lexer extends TokenStream implements Context {
         lastMatchingState = currentState;
         if(currentState.hasMatchables)
           lastDispatchableState = currentState;
-
         return currentState;
       }
 
@@ -143,11 +144,13 @@ class Lexer extends TokenStream implements Context {
           remainingInput = getRemainingInput(currentState, lastMatchingState);
           currentState = lastMatchingState.dispatch(this);
           lastMatchingState = null;
+          lastDispatchableState = null;
 
         } else { // Roll back to the last state that accepted the input.
           remainingInput = getRemainingInput(currentState, lastDispatchableState);
           currentState = lastDispatchableState.dispatch(this);
           lastMatchingState = null;
+          lastDispatchableState = null;
         }
 
         // Recurse over all characters we missed.
@@ -165,7 +168,49 @@ class Lexer extends TokenStream implements Context {
       left.matchedInput.replaceFirst(right.matchedInput,'');
 
   void _onDone(){
-    if(lastMatchingState != null) lastMatchingState.dispatch(this);
+
+    // TODO: we run it twice ..
+    //        - first time to process un processes input.
+    //        - second time to process that last state.
+    if(lastMatchingState != null){
+      if(lastMatchingState.hasMatchables){
+        remainingInput = getRemainingInput(currentState, lastMatchingState);
+        currentState = lastMatchingState.dispatch(this);
+        lastMatchingState = null;
+        lastDispatchableState = null;
+
+        } else { // Roll back to the last state that accepted the input.
+        remainingInput = getRemainingInput(currentState, lastDispatchableState);
+        currentState = lastDispatchableState.dispatch(this);
+        lastMatchingState = null;
+        lastDispatchableState = null;
+      }
+
+      // Recurse over all characters we missed.
+      for(final c in remainingInput.split('')){
+        currentState = next(c);
+      }
+    }
+    if(lastMatchingState != null){
+      if(lastMatchingState.hasMatchables){
+        remainingInput = getRemainingInput(currentState, lastMatchingState);
+        currentState = lastMatchingState.dispatch(this);
+        lastMatchingState = null;
+        lastDispatchableState = null;
+
+        } else { // Roll back to the last state that accepted the input.
+        remainingInput = getRemainingInput(currentState, lastDispatchableState);
+        currentState = lastDispatchableState.dispatch(this);
+        lastMatchingState = null;
+        lastDispatchableState = null;
+      }
+
+      // Recurse over all characters we missed.
+      for(final c in remainingInput.split('')){
+        currentState = next(c);
+      }
+    }
+
     outputStream.close();
   }
 
