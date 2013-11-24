@@ -38,7 +38,7 @@ class State {
   bool get isReject => rules.every((_) => _.isReject);
 
   State next(String ch, Context context) =>
-      new State(matchedInput + ch,
+      new DerivedState(matchedInput + ch,
                 rules.map((_) => _.derive(ch)).where((_) => !_.isReject));
 
   State dispatch(Context context){
@@ -83,6 +83,10 @@ class RejectState extends State {
   State dispatch(Context context) => throw 'Rejecting something is not right.';
 }
 
+class DerivedState extends State {
+  DerivedState(matchedInput, rules): super(matchedInput, rules);
+}
+
 class Context {
   State initialState;
   List<State> stack;
@@ -92,6 +96,7 @@ class Lexer extends TokenStream implements Context {
   State initialState;
   State currentState;
   State lastMatchingState;
+  State lastDispatchableState;
   List<State> stack = <State>[];
 
   //TODO: make position actually work.
@@ -127,20 +132,23 @@ class Lexer extends TokenStream implements Context {
     } else {
       if(currentState.canMatchMore){
         lastMatchingState = currentState;
+        if(currentState.hasMatchables)
+          lastDispatchableState = currentState;
+
         return currentState;
       }
 
       if(lastMatchingState != null){
-        remainingInput = getRemainingInput();
+        if(lastMatchingState.hasMatchables){
+          remainingInput = getRemainingInput(currentState, lastMatchingState);
+          currentState = lastMatchingState.dispatch(this);
+          lastMatchingState = null;
 
-        print("currentInput: '${currentState.matchedInput}'");
-        print("LastMatchInput: '${lastMatchingState.matchedInput}'");
-        print("Remaining:    '$remainingInput'");
-        print("canMatchMore:    '${lastMatchingState.canMatchMore}'");
-
-        currentState = lastMatchingState.dispatch(this);
-        lastMatchingState = null;
-
+        } else { // Roll back to the last state that accepted the input.
+          remainingInput = getRemainingInput(currentState, lastDispatchableState);
+          currentState = lastDispatchableState.dispatch(this);
+          lastMatchingState = null;
+        }
 
         // Recurse over all characters we missed.
         for(final c in remainingInput.split('')){
@@ -153,8 +161,8 @@ class Lexer extends TokenStream implements Context {
   }
 
   var remainingInput;
-  String getRemainingInput() =>
-      currentState.matchedInput.replaceFirst(lastMatchingState.matchedInput,'');
+  String getRemainingInput(State left, State right) =>
+      left.matchedInput.replaceFirst(right.matchedInput,'');
 
   void _onDone(){
     if(lastMatchingState != null) lastMatchingState.dispatch(this);

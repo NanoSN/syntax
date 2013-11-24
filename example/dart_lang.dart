@@ -241,7 +241,6 @@ class Comments extends State {
 abstract class Strings extends State {
   Strings(String start, String end, {isRaw:false, isMultiline:false}){
     on(end) ( (State state, Lexer _) {
-        print(">>>>>>>>>>>>>>>>>>>>>> Look here <<<<<<<<<<<<<<<<<<<<<");
         _.emit(new StringEnd(state.matchedInput,_.position), state);
         return _.pop();
     });

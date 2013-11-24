@@ -478,11 +478,17 @@ main(){
           expect(tokens[10].value, equals("'"));
         });
       });
-      solo_test("triple qoutes", (){
-        var input = '""" hi """';
+      test("triple qoutes", (){
+        var input = '""" triple """';
         Future<List<Token>> match = lex(input);
         expect(match, completes);
         match.then((tokens) {
+          expect(tokens.length, equals(2));
+          expect(tokens[0] is StringStart, isTrue);
+          expect(tokens[0].value, equals('""" triple '));
+
+          expect(tokens[1] is StringEnd, isTrue);
+          expect(tokens[1].value, equals('"""'));
         });
       });
     });
