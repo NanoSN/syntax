@@ -35,7 +35,7 @@ class Match extends Language {
 /// match.
 class EndOfInput extends Language {
   const EndOfInput();
-  Language derive(dynamic ch) => reject;//(ch == EOI)? match: reject;
+  Language derive(dynamic ch) => (ch == EOI)? match: reject;
   toString() => '<EOI>';
 }
 
@@ -61,7 +61,7 @@ class Or extends Language {
   Language derive (String c) {
     return makeOr(left.derive(c), right.derive(c));
   }
-  toString() => '$left | $right';
+  toString() => '$left|$right';
 }
 
 /// A [Language] that matches two [Language]s in sequence.
@@ -82,11 +82,7 @@ class And extends Language {
     }
     return makeAnd(left.derive(c), right);
   }
-  toString() {
-    if(left is Character && right is Character)
-      return " '$left$right' ";
-    return '$left$right';
-  }
+  toString() => "$left$right";
 }
 
 
@@ -100,7 +96,7 @@ class Star extends Language {
   factory Star(language) => throw "Not permitted. Use makeStar instead";
 
   Language derive(ch) => makeAnd(language.derive(ch), makeStar(language));
-  toString() => '($language)*';
+  toString() => '$language*';
 }
 
 /// A [Language] that matches zero or one of a [Language].
