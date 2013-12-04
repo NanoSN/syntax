@@ -14,9 +14,9 @@ class Identifier extends Token {}
 class Number extends Token {}
 class EscapeSequence extends Token {}
 
-class StringStart extends Token {StringStart(v,p):super(v,p);}
-class StringPart extends Token {StringPart(v,p):super(v,p);}
-class StringEnd extends Token {StringEnd(v,p):super(v,p);}
+class StringStart extends Token {StringStart([v,p]):super(v,p);}
+class StringPart extends Token {StringPart([v,p]):super(v,p);}
+class StringEnd extends Token {StringEnd([v,p]):super(v,p);}
 class StringInterpolation extends Token {StringInterpolation([v,p]):super(v,p);}
 class StringInterpolationStart extends Token {
   StringInterpolationStart([v,p]):super(v,p);

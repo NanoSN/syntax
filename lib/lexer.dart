@@ -2,19 +2,14 @@ library lexer;
 
 import 'dart:async';
 import 'dart:collection';
+import 'token.dart';
+export 'token.dart';
 
 part 'src/language.dart';
 part 'src/rules.dart';
 part 'src/builder.dart';
 part 'src/debug.dart';
 part 'src/stream.dart';
-
-class Token {
-  String value;
-  int position;
-  Token([this.value, this.position]);
-  toString() => '$runtimeType: "$value"(${value.length}):$position';
-}
 
 class State {
   List<Rule> rules;

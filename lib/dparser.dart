@@ -174,7 +174,7 @@ class Null extends Parser {
   /// singleton factory
   static Null _instance;
   factory Null([MySet result]) {
-    if (?result) return new Null._internal(result);
+    if (result != null) return new Null._internal(result);
     if(_instance != null)
       return _instance;
     _instance = new Null._internal(result);

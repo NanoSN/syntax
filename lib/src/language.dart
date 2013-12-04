@@ -106,7 +106,7 @@ class Optional extends Language {
   bool get isMatchable => true;
 
   Optional._internal(this.language);
-  factory Optional(left, right) => throw "Not permitted. Use makeOptional instead";
+  factory Optional(language) => throw "Not permitted. Use makeOptional instead";
 
   Language derive(ch) => language.derive(ch);
   toString() => '($language)?';

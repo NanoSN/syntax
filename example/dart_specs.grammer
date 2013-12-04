@@ -52,7 +52,7 @@ block:
 
 /// Function Declarations
 /// Formal Parameters
-formalParameterList:
+ formalParameterList:
         '(' ')'
     |   '(' normalFormalParameters ( ‘,’ optionalFormalParameters)? ')'
     |   '(' optionalFormalParameters ')'
@@ -70,7 +70,7 @@ optionalPositionalFormalParameters:
 
 
 namedFormalParameters:
-        '{' defaultNamedParameter(',' defaultNamedParameter)* '}'
+        '{' defaultNamedParameter (',' defaultNamedParameter)* '}'
     ;
 
 /// Required Formals
@@ -234,7 +234,7 @@ typeParameters:
     ;
 
 /// Metadata
-'metadata'  :
+metadata:
         ("@" qualified (‘.’ identifier)? (arguments)?)*
     ;
 
@@ -547,6 +547,7 @@ multiplicativeExpression:
         unaryExpression (multiplicativeOperator unaryExpression)*
     |   super (multiplicativeOperator unaryExpression)+
     ;
+
 multiplicativeOperator:
         '*'
     |   '/'
@@ -561,6 +562,7 @@ unaryExpression:
     |   prefixOperator super
     |    incrementOperator assignableExpression
     ;
+
 prefixOperator:
         '-'
     |   unaryOperator
@@ -815,6 +817,14 @@ topLevelDefinition:
 getOrSet:
         get
     |   set
+    ;
+
+getterSignature:
+        type? get identifier
+    ;
+
+setterSignature:
+        returnType? set identifier  formalParameterList
     ;
 
 libraryDefinition:
