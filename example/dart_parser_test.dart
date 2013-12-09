@@ -18,13 +18,63 @@ main(){
           parser = parser.derive(token);
         }
         expect(parser.isMatchable, isTrue);
-        expect(parser.toAst()[0] is VariableDeclaration, isTrue);
+        //expect(parser.toAst()[0] is VariableDeclaration, isTrue);
       });
     });
 
-    skip_test('Declared Identifier', (){
-      var input = '@Bla var bla;';
-      var parser = topLevelDefinition();
+
+    test("Qualified 'foo'", (){
+      var input = 'foo';
+      var parser = qualified();
+      Future<List<Token>> match = lex(input);
+      expect(match, completes);
+      match.then((tokens) {
+        for(final token in tokens){
+          parser = parser.derive(token);
+        }
+        expect(parser.isMatchable, isTrue);
+        expect(parser.toAst()[0] is AstNode, isTrue);
+      });
+    });
+
+    test("Qualified 'foo.bar'", (){
+      var input = 'foo.bar';
+      var parser = qualified();
+      Future<List<Token>> match = lex(input);
+      expect(match, completes);
+      match.then((tokens) {
+        for(final token in tokens){
+          parser = parser.derive(token);
+        }
+        expect(parser.isMatchable, isTrue);
+        expect(parser.toAst()[0] is AstNode, isTrue);
+      });
+    });
+
+    test("Metadata is optional", (){
+      var parser = metadata();
+      expect(parser.isMatchable, isTrue);
+    });
+
+    skip_test("Metadata '@Foo'", (){
+      var input = '@Foo.bar.foo';
+      var parser = metadata();
+      print(parser.toReadableString());
+      Future<List<Token>> match = lex(input);
+      expect(match, completes);
+      match.then((tokens) {
+        print(tokens);
+        for(final token in tokens){
+          parser = parser.derive(token);
+        }
+        expect(parser.isMatchable, isTrue);
+        expect(parser.toAst()[0] is AstNode, isTrue);
+      });
+    });
+
+    skip_test('Dart Application', (){
+      var input = 'var bla;';
+      var parser = dartProgram(); //topLevelDefinition();
         //topLevelDefinition();//declaredIdentifier();
 
       Future<List<Token>> match = lex(input);

@@ -3,6 +3,7 @@ import './dart_lang.dart';
 
 class VariableDeclaration extends AstNode {
   VariableDeclaration(asts){
+    if(asts.isEmpty) return;
     var tokens = asts.reduce((r,_) => r..tokens.addAll(_.tokens)).tokens;
     for(final token in tokens){
       if(token is Identifier){
@@ -41,7 +42,9 @@ varOrType() =>
 type() => px([ typeName, optional(typeArguments) ]);
 typeName() => qualified;
 
+// TESTED.
 qualified() => px([ identifier, optional(and([ '.', identifier ])) ]);
+
 typeArguments() => px([ '<', typeList, '>' ]);
 typeList() => px([ type, zeroOrMore( and([ ',', type ])) ]);
 
@@ -938,7 +941,7 @@ partHeader() =>
       ]);
 
 partDeclaration() =>
-    px([ partHeader, zeroOrMore(topLevelDefinition), EOF ]);
+    px([ partHeader, zeroOrMore(topLevelDefinition), new EOF() ]);
 
 /// URIs
 uri() => stringLiteral;
@@ -971,15 +974,16 @@ dartProgram()=>
          libraryDefinition,
          partDeclaration
       ]);
-EOF() => print('WHAT? EOF');
+
 
 main(){
   var tokens = [new Token('var'), new Identifier()..value ='bla',
                 new Token(','), new Identifier()..value ='foo' ];
-  var parser = variableDeclaration();
 
+  var parser = dartProgram();
+  //print(parser.toDot());
   for(final t in tokens){
     parser = parser.derive(t);
   }
-  print(parser.toAst());
+//  print(parser.toAst());
 }

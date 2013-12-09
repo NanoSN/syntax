@@ -31,19 +31,28 @@ Parser optional(dynamic parser) => zeroOrOne(parser);
 Map<String, Parser> cache = <String,Parser>{};
 List<String> _inCall = <String>[];
 /// Try to convert anything to [Parser].
-Parser toParser(dynamic thing){
-  if(thing is Function) return functionToParser(thing);
-  if(thing is String) return new TokenParser(new TokenDefinition(value:thing));
+Parser toParser(dynamic thing, [name]){
+  bool hasName = (name != null);
+  if(thing is Function){
+    var name = reflect(thing).function.simpleName.toString();
+    functions_trace.add(name);
+
+    return functionToParser(thing, name);
+  }
+  if(thing is String) return new TokenParser(new TokenDefinition(value:thing),
+                                             hasName? name : thing);
   if(thing is Parser) return thing;
-  if(thing is Token) return new TokenParser(new TokenDefinition(type:thing));
+  if(thing is Token) return new TokenParser(new TokenDefinition(type:thing),
+                                            hasName? name : '${thing.runtimeType}');
   throw 'Unable to convert type known [${thing.runtimeType}] to Parser';
 }
 
-Parser functionToParser(Function fn){
-  if(_inCall.contains('$fn')){
-    var thing = cache['$fn'];
-    return new Lazy(thing, '$fn');
+var functions_trace = [];
+Parser functionToParser(Function fn, name){
+  if(_inCall.contains('$name')){
+    var thing = cache['$name'];
+    return new Lazy(thing, name);
   }
-  else _inCall.add('$fn');
-  return cache.putIfAbsent('$fn', () => toParser(fn()));
+  else _inCall.add('$name');
+  return cache.putIfAbsent('$name', () => toParser(fn(), name));
 }

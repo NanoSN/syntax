@@ -37,3 +37,6 @@ class Token {
   }
   operator ==(o) => value == o.value && position == o.position;
 }
+
+/// End of File [Token]
+class EOF extends Token {}
