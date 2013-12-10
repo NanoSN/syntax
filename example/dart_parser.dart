@@ -4,12 +4,11 @@ import './dart_lang.dart';
 class VariableDeclaration extends AstNode {
   VariableDeclaration(asts){
     if(asts.isEmpty) return;
-    var tokens = asts.reduce((r,_) => r..tokens.addAll(_.tokens)).tokens;
-    for(final token in tokens){
-      if(token is Identifier){
-        children.add(new IdentifierNode()..tokens.add(token));
-      }
-    }
+    var ts = asts.reduce((r,_) {
+      if(_ is! VariableDeclaration)
+        return r..tokens.addAll(_.tokens);
+    }).tokens;
+    tokens.addAll(ts.toSet());
   }
 }
 class IdentifierNode extends AstNode {}
@@ -978,12 +977,13 @@ dartProgram()=>
 
 main(){
   var tokens = [new Token('var'), new Identifier()..value ='bla',
-                new Token(','), new Identifier()..value ='foo' ];
+                new Token(','), new Identifier()..value ='foo',
+                new Token(','), new Identifier()..value ='bar',
+                new Token(';')];
 
   var parser = dartProgram();
-  //print(parser.toDot());
   for(final t in tokens){
     parser = parser.derive(t);
   }
-//  print(parser.toAst());
+  print(parser.toAst());
 }

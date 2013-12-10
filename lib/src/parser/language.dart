@@ -167,9 +167,9 @@ class And extends Parser {
              'And -> ${right.toDot()}\n';
   toString() => "$left$right";
   toAst() {
-    var leftAst, rightAst = new AstList();
-   leftAst = left.toAst();
-   rightAst = right.toAst();
+    var leftAst, rightAst;
+    leftAst = left.toAst();
+    rightAst = right.toAst();
     var ast = new AstList();
     ast.addAll(leftAst);
     ast.addAll(rightAst);
@@ -280,8 +280,6 @@ Parser makeStar(Parser parser, [name]){
 }
 
 Parser makeReduce(Parser parser, AstCreator astCreator, [name]){
-  print(parser.runtimeType);
-  print(parser.toAst());
   if(parser == reject) return reject;
   if(parser is Match) return new AstNodeMatch(new AstList()
     ..addAll([astCreator(parser.toAst())]), name);
