@@ -2,8 +2,8 @@ name: syntax
 description: simple general purpose syntax library
 author: "Sam Elkhateeb <same@nanosn.com>"
 homepage: https://github.com/
-description:  TODO
-version: 0.1.0
+description:  Syntax library includes lexer and parser.
+version: 0.2.0
 
 dependencies:
   logging: any
