@@ -5,11 +5,11 @@ import 'dart:collection';
 import 'token.dart';
 export 'token.dart';
 
-part 'src/language.dart';
-part 'src/rules.dart';
-part 'src/builder.dart';
-part 'src/debug.dart';
-part 'src/stream.dart';
+part 'src/lexer/language.dart';
+part 'src/lexer/rules.dart';
+part 'src/lexer/builder.dart';
+part 'src/lexer/debug.dart';
+part 'src/lexer/stream.dart';
 
 class State {
   List<Rule> rules;
