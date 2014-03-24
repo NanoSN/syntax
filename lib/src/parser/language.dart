@@ -220,7 +220,8 @@ class Reduce extends Parser {
   toAst(){
     AstList result = new AstList();
     AstList nodes = parser.toAst();
-    result.add(astCreator(nodes));
+    if(nodes.isNotEmpty)
+      result.add(astCreator(nodes));
     return result;
   }
   toReadableString() {

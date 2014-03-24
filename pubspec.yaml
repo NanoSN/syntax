@@ -1,10 +1,12 @@
 name: syntax
-description: simple general purpose syntax library
+description: simple general purpose syntax library.
 author: "Sam Elkhateeb <same@nanosn.com>"
-homepage: https://github.com/
+homepage: https://github.com/NanoSN/syntax
 description:  Syntax library includes lexer and parser.
 version: 0.2.0
 
 dependencies:
-  logging: any
+  polymer: any
+
+dev_dependencies:
   unittest: any

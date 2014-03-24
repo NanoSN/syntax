@@ -46,7 +46,6 @@ class AstList extends ListBase<AstNode> {
 class AstNode {
   final int hashCode;
   static int _HASH_COUNTER = 0;
-  static int _TO_STRING_INDENTATION = 0;
 
   AstNode() : hashCode = ++_HASH_COUNTER;
 
@@ -54,26 +53,28 @@ class AstNode {
   final List<AstNode> children = <AstNode>[];
   final List<Token> tokens = <Token>[];
   toString(){
-    var indent = ++_TO_STRING_INDENTATION;
+    return _toString();
+  }
+
+  repr() => '';
+
+  String _toString({String prefix:'', bool isTail:true}) {
     var sb = new StringBuffer();
-    sb.writeln('$runtimeType:');
-    for(var i=0; i<indent; i++) sb.write('  ');
-    sb.writeln('`- tokens:');
+    sb..write(prefix)
+      ..write(isTail? '└── ': '├── ')
+      ..writeln('$runtimeType ${repr()}');
 
-    for(final token in tokens){
-      for(var i=0; i<=indent; i++) sb.write('  ');
-      sb.write('`- ');
-      sb.writeln(token);
-    }
+    if( children.isEmpty ) return sb.toString();
 
-    for(var i=0; i<indent; i++) sb.write('  ');
-    sb.writeln('`- children:');
-    for(final child in children){
-      for(var i=0; i<=indent; i++) sb.write('  ');
-      sb.write('');
-      sb.write(child);
-    }
-    sb.writeln();
+    children.take(children.length - 1).forEach( (child) {
+      var _prefix = prefix + (isTail ? '    ' : '│   ');
+      sb.write(child._toString(
+                          prefix:_prefix,
+                          isTail:false));
+    });
+    sb.write(children.last._toString(
+                                prefix: prefix + (isTail ? '    ' : '│   '),
+                                isTail: true));
     return sb.toString();
   }
 }
