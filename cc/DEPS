@@ -1,0 +1,10 @@
+vars = {
+    'googlecode_url': 'https://%s.googlecode.com/svn',
+
+    'gtest_rev': '@680',
+}
+
+deps = {
+    'syntax/cc/third_party/gtest':
+        (Var('googlecode_url') % 'googletest') + '/trunk' + Var("gtest_rev"),
+}
